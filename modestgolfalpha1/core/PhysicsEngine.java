@@ -129,8 +129,8 @@ public class PhysicsEngine
         double newSpeedY = initY + timeframe * initSpeedY;
         double xAccel =  -g * ((Math.abs(getHeight(heightProfile,initX,initY) - getHeight(heightProfile,newSpeedX, newSpeedY)))/(timeframe * initSpeedX)) - grassKinetic * g * (initSpeedX / kineticDenominator);
         double yAccel = -g * ((Math.abs(getHeight(heightProfile,initX,initY) - getHeight(heightProfile,newSpeedX, newSpeedY)))/(timeframe * initSpeedY)) - grassKinetic * g * (initSpeedY / kineticDenominator);
-        stateVector[0] = newSpeedX;
-        stateVector[1] = newSpeedY;
+        stateVector[0] = initSpeedX;
+        stateVector[1] = initSpeedY;
         stateVector[2] = xAccel;
         stateVector[3] = yAccel;
     }
