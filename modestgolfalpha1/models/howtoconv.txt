@@ -1,0 +1,3 @@
+.\fbx-conv -f -v "name of object".obj "name of object".g3db
+
+put this into terminal locally in folder
