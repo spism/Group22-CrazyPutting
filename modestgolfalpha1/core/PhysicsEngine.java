@@ -6,6 +6,8 @@ public class PhysicsEngine
     double firstX, firstY, targetX, targetY, targetRadius;
     double grassKinetic, grassStatic;
     String heightProfile;
+    final double h = 0.1;
+    final double g = 9.81;
     public PhysicsEngine(String filename)
     {
         try
@@ -111,8 +113,25 @@ public class PhysicsEngine
         else return Double.parseDouble(s);
     }
 
+    /**
+     *
+     * @param initX
+     * @param initY
+     * @param initSpeedX in m/s
+     * @param initSpeedY in m/s
+     * @param timeframe is how many seconds per frame
+     */
+    public void acceleration(double initX, double initY, double initSpeedX, double initSpeedY, double timeframe)
+    {
+        double kineticDenominator = Math.sqrt(initSpeedX * initSpeedX + initSpeedY * initSpeedY);
+        double xAccel =  -g * ((Math.abs(getHeight(heightProfile,initX,initY) - getHeight(heightProfile,initX + timeframe * initSpeedX, initY + timeframe * initSpeedY)))/(timeframe * initSpeedX)) - grassKinetic * g * (initSpeedX / kineticDenominator);
+        double yAccel = -g * ((Math.abs(getHeight(heightProfile,initX,initY) - getHeight(heightProfile,initX + timeframe * initSpeedX, initY + timeframe * initSpeedY)))/(timeframe * initSpeedY)) - grassKinetic * g * (initSpeedY / kineticDenominator);
+        System.out.println(xAccel + " " + yAccel);
+    }
+
     public static void main(String[] args)
     {
         PhysicsEngine test = new PhysicsEngine("C:\\Users\\mspisak\\IdeaProjects\\CrazyPutting\\src\\example_inputfile.txt");
+        test.acceleration(test.firstX,test.firstY,2,1,0.1);
     }
 }
