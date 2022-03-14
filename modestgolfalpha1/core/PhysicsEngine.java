@@ -122,22 +122,23 @@ public class PhysicsEngine
      * @param initSpeedY in m/s
      * @param timeframe is how many seconds per frame
      */
-    public void acceleration(double initX, double initY, double initSpeedX, double initSpeedY, double timeframe)
+    public void updateVector(double initX, double initY, double initSpeedX, double initSpeedY)
     {
         double kineticDenominator = Math.sqrt(initSpeedX * initSpeedX + initSpeedY * initSpeedY);
-        double newSpeedX = initX + timeframe * initSpeedX;
-        double newSpeedY = initY + timeframe * initSpeedY;
-        double xAccel =  -g * ((Math.abs(getHeight(heightProfile,initX,initY) - getHeight(heightProfile,newSpeedX, newSpeedY)))/(timeframe * initSpeedX)) - grassKinetic * g * (initSpeedX / kineticDenominator);
-        double yAccel = -g * ((Math.abs(getHeight(heightProfile,initX,initY) - getHeight(heightProfile,newSpeedX, newSpeedY)))/(timeframe * initSpeedY)) - grassKinetic * g * (initSpeedY / kineticDenominator);
-        stateVector[0] = initSpeedX;
-        stateVector[1] = initSpeedY;
-        stateVector[2] = xAccel;
-        stateVector[3] = yAccel;
+        double newSpeedX = initX + h * initSpeedX;
+        double newSpeedY = initY + h * initSpeedY;
+        double xAccel =  -g * ((Math.abs(getHeight(heightProfile,initX,initY) - getHeight(heightProfile,newSpeedX, newSpeedY)))/(h * initSpeedX)) - grassKinetic * g * (initSpeedX / kineticDenominator);
+        double yAccel = -g * ((Math.abs(getHeight(heightProfile,initX,initY) - getHeight(heightProfile,newSpeedX, newSpeedY)))/(h * initSpeedY)) - grassKinetic * g * (initSpeedY / kineticDenominator);
+        double[] newStateVector = {initSpeedX, initSpeedY, xAccel, yAccel};
+        for(int i = 0; i < stateVector.length; i++)
+        {
+            stateVector[i] = stateVector[i] + h * newStateVector[i];
+        }
     }
 
     public static void main(String[] args)
     {
         PhysicsEngine test = new PhysicsEngine("C:\\Users\\mspisak\\IdeaProjects\\CrazyPutting\\src\\example_inputfile.txt");
-        test.acceleration(test.firstX,test.firstY,2,1,0.1);
+        test.updateVector(test.firstX,test.firstY,2,1);
     }
 }
