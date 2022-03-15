@@ -10,7 +10,7 @@ public class PhysicsEngine
     String heightProfile;
     final double h = 0.1;
     final double g = 9.81;
-    double[] stateVector = {firstX, firstY, 0, 0};
+    double[] stateVector = new double[4];
     public PhysicsEngine(String filename)
     {
         try
@@ -50,17 +50,17 @@ public class PhysicsEngine
                 }
                 else if(lineIndex == 4)
                 {
-                    sandX1 = Double.parseDouble(arr[3]);
-                    sandX2 = Double.parseDouble(arr[5]);
+                    sandX1 = Double.parseDouble(arr[2]);
+                    sandX2 = Double.parseDouble(arr[6]);
                     arr = br.readLine().split(" ");
-                    sandY1 = Double.parseDouble(arr[3]);
-                    sandY2 = Double.parseDouble(arr[5]);
+                    sandY1 = Double.parseDouble(arr[2]);
+                    sandY2 = Double.parseDouble(arr[6]);
                 }
                 else if(lineIndex == 5)
                 {
-                    sandKinetic = Double.parseDouble(arr[3]);
+                    sandKinetic = Double.parseDouble(arr[2]);
                     arr = br.readLine().split(" ");
-                    sandStatic = Double.parseDouble(arr[3]);
+                    sandStatic = Double.parseDouble(arr[2]);
                 }
                 lineIndex++;
             }
@@ -131,7 +131,7 @@ public class PhysicsEngine
     }
 
     /**
-     *
+     * This method updates the state vector using a given X and a given Y
      * @param initX in meters
      * @param initY in meters
      * @param initSpeedX in meters per second
@@ -140,15 +140,19 @@ public class PhysicsEngine
     public void updateVector(double initX, double initY, double initSpeedX, double initSpeedY)
     {
         double kineticDenominator = Math.sqrt(initSpeedX * initSpeedX + initSpeedY * initSpeedY);
-        double newX = initX + h * initSpeedX;
-        double newY = initY + h * initSpeedY;
+        double limitZero = Double.MIN_VALUE;
+        double newX = initX + limitZero;
+        double newY = initY + limitZero;
         double kineticCoeff = sandX1 < initX && initX < sandX2 && sandY1 < initY && initY < sandY2 ? sandKinetic : grassKinetic;
-        double xAccel = -g * ((Math.abs(getHeight(heightProfile,initX,initY) - getHeight(heightProfile,newX, newY))) / (h * initSpeedX)) - kineticCoeff * g * (initSpeedX / kineticDenominator);
-        double yAccel = -g * ((Math.abs(getHeight(heightProfile,initX,initY) - getHeight(heightProfile,newX, newY))) / (h * initSpeedY)) - kineticCoeff * g * (initSpeedY / kineticDenominator);
+        double slopeX = (Math.abs(getHeight(heightProfile,initX,initY) - getHeight(heightProfile,newX,newY))) / limitZero;
+        double slopeY = (Math.abs(getHeight(heightProfile,initX,initY) - getHeight(heightProfile,newX, newY))) / limitZero;
+        double xAccel = -g * slopeX - kineticCoeff * g * (initSpeedX / kineticDenominator);
+        double yAccel = -g * slopeY - kineticCoeff * g * (initSpeedY / kineticDenominator);
         double[] newStateVector = {initSpeedX, initSpeedY, xAccel, yAccel};
         for(int i = 0; i < stateVector.length; i++)
         {
             stateVector[i] = stateVector[i] + h * newStateVector[i];
+            System.out.println(stateVector[i]);
         }
     }
 
@@ -161,13 +165,16 @@ public class PhysicsEngine
 
     public void runSimulation(double initX, double initY, double initSpeedX, double initSpeedY)
     {
-        while(stateVector[0] != 0 && stateVector[1] != 0) updateVector(initX,initY,initSpeedX,initSpeedY);
-        if(stateVector[0] == 0 && stateVector[1] == 0) while(stateVector[2] != 0 && stateVector[3] != 0) updateVector(stateVector[0],stateVector[1],stateVector[2],stateVector[3]);
+        stateVector[0] = initX;
+        stateVector[1] = initY;
+        stateVector[2] = initSpeedX;
+        stateVector[3] = initSpeedY;
+        while(stateVector[2] != 0 || stateVector[3] != 0) updateVector(initX,initY,initSpeedX,initSpeedY);
     }
 
     public static void main(String[] args)
     {
-        PhysicsEngine test = new PhysicsEngine("C:\\Users\\mspisak\\IdeaProjects\\CrazyPutting\\src\\example_inputfile.txt");
-        test.updateVector(test.firstX,test.firstY,2,1);
+        PhysicsEngine test = new PhysicsEngine("C:\\Users\\Matej Spisak\\IdeaProjects\\crazyPutting\\src\\example_inputfile.txt");
+        test.runSimulation(test.firstX,test.firstY,1,0);
     }
 }
