@@ -11,6 +11,7 @@ public class PhysicsEngine
     final double h = 0.1;
     final double g = 9.81;
     double[] stateVector = new double[4];
+    static double[] newStateVector = new double[4];
     public PhysicsEngine(String filename)
     {
         try
@@ -109,11 +110,13 @@ public class PhysicsEngine
                 else if(operator.equals("abs")) val = Math.abs(vals.pop());
                 vals.push(val);
             }
-            else vals.push(checkXY(curr,x,y));
+            else
+            {
+                //System.out.println(checkXY(curr,x,y));
+                vals.push(checkXY(curr,x,y));
+            }
         }
-        double result = vals.pop();
-        //System.out.println(result);
-        return result;
+        return vals.pop();
     }
 
     /**
@@ -131,29 +134,38 @@ public class PhysicsEngine
     }
 
     /**
-     * This method updates the state vector using a given X and a given Y
-     * @param initX in meters
-     * @param initY in meters
-     * @param initSpeedX in meters per second
-     * @param initSpeedY in meters per second
+     * This method updates the state vector
      */
-    public void updateVector(double initX, double initY, double initSpeedX, double initSpeedY)
+    public void updateVector(boolean atRest)
     {
-        double kineticDenominator = Math.sqrt(initSpeedX * initSpeedX + initSpeedY * initSpeedY);
+        double x = stateVector[0];
+        double y = stateVector[1];
+        double speedX = stateVector[2];
+        double speedY = stateVector[3];
+
         double limitZero = Double.MIN_VALUE;
-        double newX = initX + limitZero;
-        double newY = initY + limitZero;
-        double kineticCoeff = sandX1 < initX && initX < sandX2 && sandY1 < initY && initY < sandY2 ? sandKinetic : grassKinetic;
-        double slopeX = (Math.abs(getHeight(heightProfile,initX,initY) - getHeight(heightProfile,newX,newY))) / limitZero;
-        double slopeY = (Math.abs(getHeight(heightProfile,initX,initY) - getHeight(heightProfile,newX, newY))) / limitZero;
-        double xAccel = -g * slopeX - kineticCoeff * g * (initSpeedX / kineticDenominator);
-        double yAccel = -g * slopeY - kineticCoeff * g * (initSpeedY / kineticDenominator);
-        double[] newStateVector = {initSpeedX, initSpeedY, xAccel, yAccel};
+        double newX = x + limitZero;
+        double newY = y + limitZero;
+
+        double kineticDenominator = Math.sqrt(speedX * speedX + speedY * speedY);
+        double kineticCoeff = sandX1 < x && x < sandX2 && sandY1 < y && y < sandY2 ? sandKinetic : grassKinetic;
+        double slopeX = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,newX,newY))) / limitZero;
+        double slopeY = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,newX, newY))) / limitZero;
+        double secondTermX = atRest ? kineticCoeff * g * (slopeX / Math.sqrt(slopeX * slopeX + slopeY * slopeY)) : kineticCoeff * g * (speedX / kineticDenominator);
+        double secondTermY = atRest ? kineticCoeff * g * (slopeY / Math.sqrt(slopeX * slopeX + slopeY * slopeY)) : kineticCoeff * g * (speedY / kineticDenominator);
+        double xAccel = -g * slopeX - secondTermX;
+        double yAccel = -g * slopeY - secondTermY;
+        
+        newStateVector[0] = stateVector[2];
+        newStateVector[1] = stateVector[3];
+        newStateVector[2] = xAccel;
+        newStateVector[3] = yAccel;
         for(int i = 0; i < stateVector.length; i++)
         {
             stateVector[i] = stateVector[i] + h * newStateVector[i];
             System.out.println(stateVector[i]);
         }
+        System.out.println();
     }
 
     public boolean atRest(double x, double y)
@@ -169,7 +181,16 @@ public class PhysicsEngine
         stateVector[1] = initY;
         stateVector[2] = initSpeedX;
         stateVector[3] = initSpeedY;
-        while(stateVector[2] != 0 || stateVector[3] != 0) updateVector(initX,initY,initSpeedX,initSpeedY);
+        while(true)
+        {
+            if(Math.abs(stateVector[2]) < 0.1 && Math.abs(stateVector[3]) < 0.1)
+            {
+                stateVector[2] = 0;
+                stateVector[3] = 0;
+                updateVector(atRest(stateVector[0],stateVector[1]));
+            }
+            updateVector(false);
+        }
     }
 
     public static void main(String[] args)
