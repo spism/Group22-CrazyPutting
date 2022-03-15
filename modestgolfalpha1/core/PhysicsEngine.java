@@ -150,7 +150,7 @@ public class PhysicsEngine
         double speedX = stateVector[2];
         double speedY = stateVector[3];
 
-        double limitZero = Double.MIN_VALUE;
+        double limitZero = 0.00001;
         double newX = x + limitZero;
         double newY = y + limitZero;
 
@@ -196,13 +196,11 @@ public class PhysicsEngine
 
         while(true)
         {
-            if(Math.abs(stateVector[2]) < 0.1 && Math.abs(stateVector[3]) < 0.1)
+            if(Math.abs(stateVector[2]) < 0.1 && Math.abs(stateVector[3]) < 0.1 && !atRest(stateVector[0],stateVector[1]))
             {
-                while(!atRest(stateVector[0],stateVector[1]))
-                {
-                    updateVector(true);
-                }
-                break;
+                stateVector[2] = 0;
+                stateVector[3] = 0;
+                updateVector(atRest(stateVector[0],stateVector[1]));
             }
             updateVector(false);
         }
