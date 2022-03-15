@@ -149,13 +149,15 @@ public class PhysicsEngine
 
         double kineticDenominator = Math.sqrt(speedX * speedX + speedY * speedY);
         double kineticCoeff = sandX1 < x && x < sandX2 && sandY1 < y && y < sandY2 ? sandKinetic : grassKinetic;
-        double slopeX = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,newX,newY))) / limitZero;
-        double slopeY = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,newX, newY))) / limitZero;
+        System.out.println(getHeight(heightProfile,x,y) - getHeight(heightProfile,newX,newY));
+        System.out.println(getHeight(heightProfile,x,y) - getHeight(heightProfile,newX, newY));
+        double slopeX = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,newX,y))) / limitZero;
+        double slopeY = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,x, newY))) / limitZero;
         double secondTermX = atRest ? kineticCoeff * g * (slopeX / Math.sqrt(slopeX * slopeX + slopeY * slopeY)) : kineticCoeff * g * (speedX / kineticDenominator);
         double secondTermY = atRest ? kineticCoeff * g * (slopeY / Math.sqrt(slopeX * slopeX + slopeY * slopeY)) : kineticCoeff * g * (speedY / kineticDenominator);
         double xAccel = -g * slopeX - secondTermX;
         double yAccel = -g * slopeY - secondTermY;
-        
+
         newStateVector[0] = stateVector[2];
         newStateVector[1] = stateVector[3];
         newStateVector[2] = xAccel;
@@ -170,8 +172,10 @@ public class PhysicsEngine
 
     public boolean atRest(double x, double y)
     {
-        double derivative = (getHeight(heightProfile,x,y) - getHeight(heightProfile,x + 0.0000001, y + 0.0000001)) / 0.0000001;
-        if(grassStatic > Math.sqrt(derivative * derivative + derivative * derivative)) return true;
+        double limitZero = Double.MIN_VALUE;
+        double derivativeX = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,x + limitZero,y))) / limitZero;
+        double derivativeY = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,x,y + limitZero))) / limitZero;
+        if(grassStatic > Math.sqrt(derivativeX * derivativeX + derivativeY * derivativeY)) return true;
         else return false;
     }
 
