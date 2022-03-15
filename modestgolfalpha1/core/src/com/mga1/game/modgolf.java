@@ -9,9 +9,11 @@ import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g3d.*;
+import com.badlogic.gdx.graphics.g3d.loader.G3dModelLoader;
 import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.ScreenUtils;
 import jdk.jfr.internal.settings.PeriodSetting;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
@@ -31,8 +33,7 @@ public class modgolf extends ApplicationAdapter {
 	//models
 	public ModelInstance inst;
 	public ModelBatch modelBatch;
-	public AssetManager assets;
-	public Array<ModelInstance> instances = new Array<ModelInstance>();
+	public ModelBuilder bbuilder;
 
 	//skybox etc
 	public Environment environment;
@@ -42,6 +43,9 @@ public class modgolf extends ApplicationAdapter {
 
 	@Override
 	public void create () {
+
+		Model gun = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\gun.g3dj"));
+		inst = new ModelInstance(gun);
 		modelBatch = new ModelBatch();
 		environment = new Environment();
 		environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1f));
@@ -51,43 +55,30 @@ public class modgolf extends ApplicationAdapter {
 		cam.position.set(1f, 1f, 1f);
 		cam.lookAt(0,0,0);
 		cam.near = 1f;
-		cam.far = 300f;
+		cam.far = 600f;
 		cam.update();
 
 		camController = new CameraInputController(cam);
 		Gdx.input.setInputProcessor(camController);
 
-		assets = new AssetManager();
-		assets.load("data/gun.obj", Model.class);
-		loading = true;
-	}
 
-	private void doneLoading() {
-		Model ship = assets.get("data\\C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\gun.obj", Model.class);
-		ModelInstance shipInstance = new ModelInstance(ship);
-		instances.add(shipInstance);
-		loading = false;
 	}
 
 	@Override
 	public void render () {
-		if (loading && assets.update())
-			doneLoading();
 		camController.update();
 
 		Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
 		modelBatch.begin(cam);
-		modelBatch.render(instances, environment);
+		modelBatch.render(inst, environment);
 		modelBatch.end();
 	}
 
 	@Override
 	public void dispose () {
 		modelBatch.dispose();
-		instances.clear();
-		assets.dispose();
 	}
 
 	public void resume () {

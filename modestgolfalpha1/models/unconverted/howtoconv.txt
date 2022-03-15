@@ -1,0 +1,3 @@
+.\fbx-conv -f -v "name of object".fbx "name of object".g3dj
+
+put this into terminal locally in folder
