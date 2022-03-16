@@ -1,4 +1,3 @@
-package com.mga1.game;
 import java.io.*;
 import java.util.Stack;
 
@@ -75,7 +74,10 @@ public class PhysicsEngine
     }
 
     /**
-     * This method evaluates the expression for height for a given X and Y coordinate.
+     * This method evaluates the expression for height for a given X and Y coordinate.  It works with the functions sin, cos, tan,
+     * log with base 10, natural logarithm, and can perform addition, subtraction, multiplication and division granted there is a pair
+     * of brackets for each performed operation.  It can work with up to two unknowns and can use the value for pi and Euler's
+     * number.
      * @param x is the x coordinate
      * @param y is the y coordinate
      * @return the height for the coordinates
@@ -98,7 +100,8 @@ public class PhysicsEngine
             else if(curr.equals("cos")) ops.push(curr);
             else if(curr.equals("sqrt")) ops.push(curr);
             else if(curr.equals("abs")) ops.push(curr);
-            else if(curr.equals("log")) ops.push(curr);
+            else if(curr.equals("logb10")) ops.push(curr);
+            else if(curr.equals("logbe")) ops.push(curr);
             else if(curr.equals(")"))
             {
                 String operator = ops.pop();
@@ -113,7 +116,8 @@ public class PhysicsEngine
                 else if(operator.equals("cos")) val = Math.cos(val);
                 else if(operator.equals("sqrt")) val = Math.sqrt(val);
                 else if(operator.equals("abs")) val = Math.abs(val);
-                else if(operator.equals("log")) val = Math.log10(val);
+                else if(operator.equals("logb10")) val = Math.log10(val);
+                else if(operator.equals("logbe")) val = Math.log(val);
                 //System.out.print(val);
                 //System.out.println();
                 vals.push(val);
@@ -148,7 +152,11 @@ public class PhysicsEngine
     }
 
     /**
-     * This method updates the state vector
+     * This method updates the state vector using Euler's method.  It increments the current y and x position based on the speed
+     * and it increments the current x and y speed based on the acceleration.  The acceleration (in a certain direction) is calculated
+     * using the equations x'' = -g * ( dh / dx ) - muk * g ( vx / sqrt (vx ^ 2 + vy ^ 2 ) ) and
+     * y'' = -g * ( dh / dy ) - muk * g ( vy / sqrt (vx ^ 2 + vy ^ 2 ) )
+     * @param atRest is the state of the ball when the velocities reach 0
      */
     public void updateVector(boolean atRest)
     {
@@ -187,46 +195,60 @@ public class PhysicsEngine
         System.out.println();
     }
 
+    /**
+     * Checks if the ball will move after reaching 0 total velocity by calculating the slope and comparing it to the static friction coefficient
+     * @param x is the current x coordinate
+     * @param y is the current y coordinate
+     * @return true if the ball will stay at rest, false if not
+     */
     public boolean atRest(double x, double y)
     {
         double limitZero = 0.000000000001;
         double derivativeX = (Math.abs(getHeight(x,y) - getHeight(x + limitZero,y))) / limitZero;
         double derivativeY = (Math.abs(getHeight(x,y) - getHeight(x,y + limitZero))) / limitZero;
+        System.out.println(derivativeX + " " + derivativeY);
         if(grassStatic > Math.sqrt(derivativeX * derivativeX + derivativeY * derivativeY)) return true;
         else return false;
     }
 
+    /**
+     * Updates the state vector based on some conditions given an initial speed in the X and Y direction
+     * @param initSpeedX is the initial speed in the X direction
+     * @param initSpeedY is the initial speed in the Y direction
+     */
     public void runSimulation(double initSpeedX, double initSpeedY)
     {
-        if(!initSpeedsDefined)
-        {
+        //if(!initSpeedsDefined)
+        //{
             stateVector[0] = firstX;
             stateVector[1] = firstY;
             stateVector[2] = initSpeedX;
             stateVector[3] = initSpeedY;
             initSpeedsDefined = true;
+        //}
+
+        while(true)
+        {
+            if(Math.abs(stateVector[2]) < 0.2 && Math.abs(stateVector[3]) < 0.2)
+            {
+                break;
+            }
+            updateVector(false);
         }
 
-        if (getHeight(stateVector[0], stateVector[1]) < 0)
+        /*if (getHeight(stateVector[0], stateVector[1]) < 0)
         {
             System.out.println("Ball landed in water!");
         }
-        if (Math.abs(stateVector[2]) < 0.1 && Math.abs(stateVector[3]) < 0.1)
-        {
-            stateVector[2] = 0;
-            stateVector[3] = 0;
-            if ((stateVector[0] > targetX - targetRadius && stateVector[0] < targetX + targetRadius) && (stateVector[1] > targetY - targetRadius && stateVector[1] < targetY + targetRadius))
-            {
-                System.out.println("Hole reached!");
-            }
-        }
-        if (!atRest(stateVector[0], stateVector[1])) updateVector(false);
-        else if (atRest(stateVector[0], stateVector[1])) updateVector(true);
+        updateVector(false);*/
     }
 
     public static void main(String[] args)
     {
         PhysicsEngine test = new PhysicsEngine("C:\\Users\\mspisak\\IdeaProjects\\CrazyPutting\\src\\example_inputfile.txt");
-        test.runSimulation(3,0);
+        //while(Math.abs(test.stateVector[2]) < 0.1 && Math.abs(test.stateVector[3]) < 0.1)
+        //{
+            test.runSimulation(2,0);
+        //}
     }
 }
