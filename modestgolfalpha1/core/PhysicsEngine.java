@@ -150,7 +150,7 @@ public class PhysicsEngine
         double speedX = stateVector[2];
         double speedY = stateVector[3];
 
-        double limitZero = 0.00001;
+        double limitZero = Double.MIN_NORMAL;
         double newX = x + limitZero;
         double newY = y + limitZero;
 
@@ -159,6 +159,7 @@ public class PhysicsEngine
         double slopeX = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,newX,y))) / limitZero;
         double slopeY = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,x, newY))) / limitZero;
         //System.out.println(getHeight(heightProfile,x,y) + " " + getHeight(heightProfile,newX,y));
+        System.out.println("slope X: " + slopeX + " slope y: " + slopeY);
         double secondTermX = atRest ? kineticCoeff * g * (slopeX / Math.sqrt(slopeX * slopeX + slopeY * slopeY)) : kineticCoeff * g * (speedX / kineticDenominator);
         double secondTermY = atRest ? kineticCoeff * g * (slopeY / Math.sqrt(slopeX * slopeX + slopeY * slopeY)) : kineticCoeff * g * (speedY / kineticDenominator);
         double xAccel = -g * slopeX - secondTermX;
@@ -180,7 +181,7 @@ public class PhysicsEngine
 
     public boolean atRest(double x, double y)
     {
-        double limitZero = Double.MIN_VALUE;
+        double limitZero = Double.MIN_NORMAL;
         double derivativeX = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,x + limitZero,y))) / limitZero;
         double derivativeY = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,x,y + limitZero))) / limitZero;
         if(grassStatic > Math.sqrt(derivativeX * derivativeX + derivativeY * derivativeY)) return true;
@@ -196,11 +197,12 @@ public class PhysicsEngine
 
         while(true)
         {
-            if(Math.abs(stateVector[2]) < 0.1 && Math.abs(stateVector[3]) < 0.1 && !atRest(stateVector[0],stateVector[1]))
+            if(Math.abs(stateVector[2]) < 0.1 && Math.abs(stateVector[3]) < 0.1)
             {
                 stateVector[2] = 0;
                 stateVector[3] = 0;
-                updateVector(atRest(stateVector[0],stateVector[1]));
+                while(!atRest(stateVector[0],stateVector[1])) updateVector(true);
+                break;
             }
             updateVector(false);
         }
@@ -208,7 +210,7 @@ public class PhysicsEngine
 
     public static void main(String[] args)
     {
-        PhysicsEngine test = new PhysicsEngine("C:\\Users\\Matej Spisak\\IdeaProjects\\crazyPutting\\src\\example_inputfile.txt");
+        PhysicsEngine test = new PhysicsEngine("C:\\Users\\mspisak\\IdeaProjects\\CrazyPutting\\src\\example_inputfile.txt");
         test.runSimulation(test.firstX,test.firstY,1,0);
     }
 }
