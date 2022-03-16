@@ -11,6 +11,7 @@ public class PhysicsEngine
     final double h = 0.1;
     final double g = 9.81;
     double[] stateVector = new double[4];
+    static double[] newStateVector = new double[4];
     public PhysicsEngine(String filename)
     {
         try
@@ -98,18 +99,27 @@ public class PhysicsEngine
             else if(curr.equals(")"))
             {
                 String operator = ops.pop();
+                //System.out.println(operator);
                 double val = vals.pop();
+                //System.out.println(val);
                 if(operator.equals("+")) val = vals.pop() + val;
                 else if(operator.equals("-")) val = vals.pop() - val;
                 else if(operator.equals("*")) val = vals.pop() * val;
                 else if(operator.equals("/")) val = vals.pop() / val;
-                else if(operator.equals("sin")) val = Math.sin(vals.pop());
-                else if(operator.equals("cos")) val = Math.cos(vals.pop());
-                else if(operator.equals("sqrt")) val = Math.sqrt(vals.pop());
-                else if(operator.equals("abs")) val = Math.abs(vals.pop());
+                else if(operator.equals("sin")) val = Math.sin(val);
+                else if(operator.equals("cos")) val = Math.cos(val);
+                else if(operator.equals("sqrt")) val = Math.sqrt(val);
+                else if(operator.equals("abs")) val = Math.abs(val);
+                //System.out.println(val);
+                //System.out.println();
                 vals.push(val);
             }
-            else vals.push(checkXY(curr,x,y));
+            else
+            {
+                //System.out.println(checkXY(curr,x,y));
+                vals.push(checkXY(curr,x,y));
+                //System.out.println(checkXY(curr,x,y));
+            }
         }
         double result = vals.pop();
         //System.out.println(result);
@@ -131,35 +141,50 @@ public class PhysicsEngine
     }
 
     /**
-     * This method updates the state vector using a given X and a given Y
-     * @param initX in meters
-     * @param initY in meters
-     * @param initSpeedX in meters per second
-     * @param initSpeedY in meters per second
+     * This method updates the state vector
      */
-    public void updateVector(double initX, double initY, double initSpeedX, double initSpeedY)
+    public void updateVector(boolean atRest)
     {
-        double kineticDenominator = Math.sqrt(initSpeedX * initSpeedX + initSpeedY * initSpeedY);
-        double limitZero = Double.MIN_VALUE;
-        double newX = initX + limitZero;
-        double newY = initY + limitZero;
-        double kineticCoeff = sandX1 < initX && initX < sandX2 && sandY1 < initY && initY < sandY2 ? sandKinetic : grassKinetic;
-        double slopeX = (Math.abs(getHeight(heightProfile,initX,initY) - getHeight(heightProfile,newX,newY))) / limitZero;
-        double slopeY = (Math.abs(getHeight(heightProfile,initX,initY) - getHeight(heightProfile,newX, newY))) / limitZero;
-        double xAccel = -g * slopeX - kineticCoeff * g * (initSpeedX / kineticDenominator);
-        double yAccel = -g * slopeY - kineticCoeff * g * (initSpeedY / kineticDenominator);
-        double[] newStateVector = {initSpeedX, initSpeedY, xAccel, yAccel};
+        double x = stateVector[0];
+        double y = stateVector[1];
+        double speedX = stateVector[2];
+        double speedY = stateVector[3];
+
+        double limitZero = 0.000001;
+        double newX = x + limitZero;
+        double newY = y + limitZero;
+
+        double kineticDenominator = Math.sqrt(speedX * speedX + speedY * speedY);
+        double kineticCoeff = sandX1 < x && x < sandX2 && sandY1 < y && y < sandY2 ? sandKinetic : grassKinetic;
+        double slopeX = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,newX,y))) / limitZero;
+        double slopeY = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,x, newY))) / limitZero;
+        //System.out.println(getHeight(heightProfile,x,y) + " " + getHeight(heightProfile,newX,y));
+        System.out.println("slope X: " + slopeX + " slope y: " + slopeY);
+        double secondTermX = atRest ? kineticCoeff * g * (slopeX / Math.sqrt(slopeX * slopeX + slopeY * slopeY)) : kineticCoeff * g * (speedX / kineticDenominator);
+        double secondTermY = atRest ? kineticCoeff * g * (slopeY / Math.sqrt(slopeX * slopeX + slopeY * slopeY)) : kineticCoeff * g * (speedY / kineticDenominator);
+        double xAccel = -g * slopeX - secondTermX;
+        double yAccel = -g * slopeY - secondTermY;
+        //System.out.println("x acceleration: " + xAccel + " y acceleration: " + yAccel);
+
+        newStateVector[0] = stateVector[2];
+        newStateVector[1] = stateVector[3];
+        newStateVector[2] = xAccel;
+        newStateVector[3] = yAccel;
         for(int i = 0; i < stateVector.length; i++)
         {
+            System.out.println(stateVector[i] + " + " + h + " * " + newStateVector[i]);
             stateVector[i] = stateVector[i] + h * newStateVector[i];
             System.out.println(stateVector[i]);
         }
+        System.out.println();
     }
 
     public boolean atRest(double x, double y)
     {
-        double derivative = (getHeight(heightProfile,x,y) - getHeight(heightProfile,x + 0.0000001, y + 0.0000001)) / 0.0000001;
-        if(grassStatic > Math.sqrt(derivative * derivative + derivative * derivative)) return true;
+        double limitZero = 0.000001;
+        double derivativeX = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,x + limitZero,y))) / limitZero;
+        double derivativeY = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,x,y + limitZero))) / limitZero;
+        if(grassStatic > Math.sqrt(derivativeX * derivativeX + derivativeY * derivativeY)) return true;
         else return false;
     }
 
@@ -169,12 +194,32 @@ public class PhysicsEngine
         stateVector[1] = initY;
         stateVector[2] = initSpeedX;
         stateVector[3] = initSpeedY;
-        while(stateVector[2] != 0 || stateVector[3] != 0) updateVector(initX,initY,initSpeedX,initSpeedY);
+
+        while(true)
+        {
+            if(getHeight(heightProfile,stateVector[0],stateVector[1]) < 0)
+            {
+                System.out.println("Ball landed in water!");
+                break;
+            }
+            if(Math.abs(stateVector[2]) < 0.1 && Math.abs(stateVector[3]) < 0.1)
+            {
+                stateVector[2] = 0;
+                stateVector[3] = 0;
+                while(!atRest(stateVector[0],stateVector[1])) updateVector(true);
+                if((stateVector[0] > targetX - targetRadius && stateVector[0] < targetX + targetRadius) || (stateVector[1] > targetY - targetRadius && stateVector[1] < targetY + targetRadius))
+                {
+                    System.out.println("Hole reached!");
+                }
+                break;
+            }
+            updateVector(false);
+        }
     }
 
     public static void main(String[] args)
     {
-        PhysicsEngine test = new PhysicsEngine("C:\\Users\\Matej Spisak\\IdeaProjects\\crazyPutting\\src\\example_inputfile.txt");
+        PhysicsEngine test = new PhysicsEngine("C:\\Users\\mspisak\\IdeaProjects\\CrazyPutting\\src\\example_inputfile.txt");
         test.runSimulation(test.firstX,test.firstY,1,0);
     }
 }
