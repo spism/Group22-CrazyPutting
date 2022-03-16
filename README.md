@@ -1,6 +1,6 @@
 To start the physics engine, in the main method, when initializing the "test" object, in the constructor parameters define a filepath for an input file.  Then, call the method runSimulation with parameters initial x, initial y (starting points of balls), initial speed X, initial speed Y (starting put of ball in x and y directions) in the same order as mentioned.
 
- -------------------- Input file format --------------------
+ --------------------------------------------------------------------- Input file format ---------------------------------------------------------------------
 The golf parameters must be defined in the following order, where each individual character/logical string of characters are separated by spaces:
 x0 = <x0>
 y0 = <y0>
