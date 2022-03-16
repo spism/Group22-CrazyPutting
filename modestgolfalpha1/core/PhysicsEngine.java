@@ -150,7 +150,7 @@ public class PhysicsEngine
         double speedX = stateVector[2];
         double speedY = stateVector[3];
 
-        double limitZero = Double.MIN_NORMAL;
+        double limitZero = 0.000001;
         double newX = x + limitZero;
         double newY = y + limitZero;
 
@@ -181,7 +181,7 @@ public class PhysicsEngine
 
     public boolean atRest(double x, double y)
     {
-        double limitZero = Double.MIN_NORMAL;
+        double limitZero = 0.000001;
         double derivativeX = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,x + limitZero,y))) / limitZero;
         double derivativeY = (Math.abs(getHeight(heightProfile,x,y) - getHeight(heightProfile,x,y + limitZero))) / limitZero;
         if(grassStatic > Math.sqrt(derivativeX * derivativeX + derivativeY * derivativeY)) return true;
@@ -197,6 +197,11 @@ public class PhysicsEngine
 
         while(true)
         {
+            if(getHeight(heightProfile,stateVector[0],stateVector[1]) < 0)
+            {
+                System.out.println("Ball landed in water!");
+                break;
+            }
             if(Math.abs(stateVector[2]) < 0.1 && Math.abs(stateVector[3]) < 0.1)
             {
                 stateVector[2] = 0;
