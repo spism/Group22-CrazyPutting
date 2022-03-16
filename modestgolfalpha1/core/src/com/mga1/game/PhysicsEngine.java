@@ -1,3 +1,4 @@
+package com.mga1.game;
 import java.io.*;
 import java.util.Stack;
 
@@ -12,6 +13,7 @@ public class PhysicsEngine
     final double g = 9.81;
     double[] stateVector = new double[4];
     static double[] newStateVector = new double[4];
+    boolean initSpeedsDefined = false;
     public PhysicsEngine(String filename)
     {
         try
@@ -96,6 +98,7 @@ public class PhysicsEngine
             else if(curr.equals("cos")) ops.push(curr);
             else if(curr.equals("sqrt")) ops.push(curr);
             else if(curr.equals("abs")) ops.push(curr);
+            else if(curr.equals("log")) ops.push(curr);
             else if(curr.equals(")"))
             {
                 String operator = ops.pop();
@@ -110,6 +113,7 @@ public class PhysicsEngine
                 else if(operator.equals("cos")) val = Math.cos(val);
                 else if(operator.equals("sqrt")) val = Math.sqrt(val);
                 else if(operator.equals("abs")) val = Math.abs(val);
+                else if(operator.equals("log")) val = Math.log10(val);
                 //System.out.print(val);
                 //System.out.println();
                 vals.push(val);
@@ -192,38 +196,37 @@ public class PhysicsEngine
         else return false;
     }
 
-    public void runSimulation(double initX, double initY, double initSpeedX, double initSpeedY)
+    public void runSimulation(double initSpeedX, double initSpeedY)
     {
-        stateVector[0] = initX;
-        stateVector[1] = initY;
-        stateVector[2] = initSpeedX;
-        stateVector[3] = initSpeedY;
-
-        while(true)
+        if(!initSpeedsDefined)
         {
-            if(getHeight(stateVector[0],stateVector[1]) < 0)
-            {
-                System.out.println("Ball landed in water!");
-                break;
-            }
-            if(Math.abs(stateVector[2]) < 0.1 && Math.abs(stateVector[3]) < 0.1)
-            {
-                stateVector[2] = 0;
-                stateVector[3] = 0;
-                while(!atRest(stateVector[0],stateVector[1])) updateVector(true);
-                if((stateVector[0] > targetX - targetRadius && stateVector[0] < targetX + targetRadius) && (stateVector[1] > targetY - targetRadius && stateVector[1] < targetY + targetRadius))
-                {
-                    System.out.println("Hole reached!");
-                }
-                break;
-            }
-            updateVector(false);
+            stateVector[0] = firstX;
+            stateVector[1] = firstY;
+            stateVector[2] = initSpeedX;
+            stateVector[3] = initSpeedY;
+            initSpeedsDefined = true;
         }
+
+        if (getHeight(stateVector[0], stateVector[1]) < 0)
+        {
+            System.out.println("Ball landed in water!");
+        }
+        if (Math.abs(stateVector[2]) < 0.1 && Math.abs(stateVector[3]) < 0.1)
+        {
+            stateVector[2] = 0;
+            stateVector[3] = 0;
+            if ((stateVector[0] > targetX - targetRadius && stateVector[0] < targetX + targetRadius) && (stateVector[1] > targetY - targetRadius && stateVector[1] < targetY + targetRadius))
+            {
+                System.out.println("Hole reached!");
+            }
+        }
+        if (!atRest(stateVector[0], stateVector[1])) updateVector(false);
+        else if (atRest(stateVector[0], stateVector[1])) updateVector(true);
     }
 
     public static void main(String[] args)
     {
         PhysicsEngine test = new PhysicsEngine("C:\\Users\\mspisak\\IdeaProjects\\CrazyPutting\\src\\example_inputfile.txt");
-        test.runSimulation(test.firstX,test.firstY,3,0);
+        test.runSimulation(3,0);
     }
 }
