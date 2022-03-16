@@ -1,5 +1,3 @@
-package com.mga1.game;
-
 import java.io.*;
 import java.util.Stack;
 
@@ -28,9 +26,9 @@ public class PhysicsEngine
                 arr = line.split(" ");
                 if(lineIndex == 0)
                 {
-                    firstX = Integer.parseInt(arr[arr.length - 1]);
+                    firstX = Double.parseDouble(arr[arr.length - 1]);
                     arr = br.readLine().split(" ");
-                    firstY = Integer.parseInt(arr[arr.length - 1]);
+                    firstY = Double.parseDouble(arr[arr.length - 1]);
                 }
                 else if(lineIndex == 1)
                 {
@@ -93,6 +91,7 @@ public class PhysicsEngine
             else if(curr.equals("-")) ops.push(curr);
             else if(curr.equals("*")) ops.push(curr);
             else if(curr.equals("/")) ops.push(curr);
+            else if(curr.equals("^")) ops.push(curr);
             else if(curr.equals("sin")) ops.push(curr);
             else if(curr.equals("cos")) ops.push(curr);
             else if(curr.equals("sqrt")) ops.push(curr);
@@ -100,18 +99,18 @@ public class PhysicsEngine
             else if(curr.equals(")"))
             {
                 String operator = ops.pop();
-                //System.out.println(operator);
                 double val = vals.pop();
-                //System.out.println(val);
+                //System.out.println("something " + operator + " " + val + " = ");
                 if(operator.equals("+")) val = vals.pop() + val;
                 else if(operator.equals("-")) val = vals.pop() - val;
                 else if(operator.equals("*")) val = vals.pop() * val;
                 else if(operator.equals("/")) val = vals.pop() / val;
+                else if(operator.equals("^")) val = Math.pow(vals.pop(),val);
                 else if(operator.equals("sin")) val = Math.sin(val);
                 else if(operator.equals("cos")) val = Math.cos(val);
                 else if(operator.equals("sqrt")) val = Math.sqrt(val);
                 else if(operator.equals("abs")) val = Math.abs(val);
-                //System.out.println(val);
+                //System.out.print(val);
                 //System.out.println();
                 vals.push(val);
             }
@@ -138,6 +137,9 @@ public class PhysicsEngine
     {
         if(s.equals("x")) return x;
         else if(s.equals("y")) return y;
+        else if(s.equals("e")) return 2.71828;
+        else if(s.equals("pi")) return 3.18;
+        else if(s.equals("g")) return 9.81;
         else return Double.parseDouble(s);
     }
 
@@ -159,12 +161,13 @@ public class PhysicsEngine
         double kineticCoeff = sandX1 < x && x < sandX2 && sandY1 < y && y < sandY2 ? sandKinetic : grassKinetic;
         double slopeX = (Math.abs(getHeight(x,y) - getHeight(newX,y))) / limitZero;
         double slopeY = (Math.abs(getHeight(x,y) - getHeight(x, newY))) / limitZero;
-        //System.out.println(getHeight(heightProfile,x,y) + " " + getHeight(heightProfile,newX,y));
+        //System.out.println(getHeight(x,y) + " " + getHeight(newX,y));
         //System.out.println("slope X: " + slopeX + " slope y: " + slopeY);
         double secondTermX = atRest ? kineticCoeff * g * (slopeX / Math.sqrt(slopeX * slopeX + slopeY * slopeY)) : kineticCoeff * g * (speedX / kineticDenominator);
         double secondTermY = atRest ? kineticCoeff * g * (slopeY / Math.sqrt(slopeX * slopeX + slopeY * slopeY)) : kineticCoeff * g * (speedY / kineticDenominator);
         double xAccel = -g * slopeX - secondTermX;
         double yAccel = -g * slopeY - secondTermY;
+        //System.out.println(secondTermX + " " + secondTermY);
         //System.out.println("x acceleration: " + xAccel + " y acceleration: " + yAccel);
 
         newStateVector[0] = stateVector[2];
@@ -221,6 +224,6 @@ public class PhysicsEngine
     public static void main(String[] args)
     {
         PhysicsEngine test = new PhysicsEngine("C:\\Users\\mspisak\\IdeaProjects\\CrazyPutting\\src\\example_inputfile.txt");
-        test.runSimulation(test.firstX,test.firstY,2,0);
+        test.runSimulation(test.firstX,test.firstY,3,0);
     }
 }
