@@ -1,3 +1,5 @@
+package com.mga1.game;
+
 import java.io.*;
 import java.util.Stack;
 
