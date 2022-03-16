@@ -1,5 +1,6 @@
 package com.mga1.game;
 
+
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -9,10 +10,14 @@ import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g3d.*;
+import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.loader.G3dModelLoader;
 import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
+import com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -26,6 +31,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.graphics.g3d.model.data.ModelTexture;
 import jdk.internal.loader.Loader;
+import com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder.VertexInfo;
 
 
 
@@ -47,6 +53,10 @@ public class modgolf extends ApplicationAdapter {
 	public Model ball;
 	public Model putter;
 	public Array<ModelInstance> instances = new Array<ModelInstance>();
+
+	//materials
+	public Material gball;
+
 	//skybox etc
 	public Environment environment;
 
@@ -55,41 +65,68 @@ public class modgolf extends ApplicationAdapter {
 	public boolean loading;
 
 
-	public class Terrain {
-		private static final float SIZE = 800;
-		private static final int VERTEX_COUNT = 128;
 
-		public float x;
-		public float z;
-		public Model terra;
-		public ModelTexture terratex;
+	public Model createshit(){
 
-		public Terrain(int gridx, int gridz, Loader loader, ModelTexture texture){
-			this.terratex = texture;
-			this.x = gridx * SIZE;
-			this.z = gridz * SIZE;
+		PhysicsEngine phys = new PhysicsEngine("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\core\\src\\com\\mga1\\game\\example_inputfile.txt");
+
+		Material grass = new Material();
+		grass.set(new TextureAttribute(TextureAttribute.Diffuse, new Texture(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\Textures\\grass texture.png"))));
+
+		final int divisions = 128;
+		final int dimension = 512;
+		final int view = dimension / divisions;
+
+		bbuilder.begin();
+		MeshPartBuilder part = bbuilder.part("",
+			GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, grass);
+
+		part.setUVRange(0,0,1,1);
+
+		for(int x = 0; x < divisions -1;  ++x){
+			for(int y = 0; y < divisions -1; ++y) {
+				VertexInfo v00 = new VertexInfo().set(new Vector3((x * (view)), 0, y * -view), null, null, new Vector2(0,0));
+
+				VertexInfo v10 = new VertexInfo().set(new Vector3((x+1) * view, 0, y * -view), null, null, new Vector2(1,0));
+
+				VertexInfo v11 = new VertexInfo().set(new Vector3((x+1) * view, 0, (y+1) * -view), null, null, new Vector2(1,1));
+
+				VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view)), 0, (y+1) * -view), null, null, new Vector2(0,1));
+
+
+				part.rect(v00, v10, v11, v01);
+			}
 		}
+		return bbuilder.end();
 	}
+
+
+
 
 
 	@Override
 	public void create () {
 
+
+
 		bbuilder = new ModelBuilder();
 
-		testfloor = bbuilder.createBox(1000f, 1f, 1000f, new Material(ColorAttribute.createDiffuse(new Color(0, 255, 0, 1))), Usage.Position | Usage.Normal);
+		testfloor = createshit();
+
+		Material gballs = new Material();
+		gballs.set(new TextureAttribute(TextureAttribute.Diffuse, new Texture(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\Textures\\Golfball.png"))));
+		Model golfball = bbuilder.createSphere(3,3,3,32,32,gballs,Usage.Position | Usage.Normal);
+
+
 
 		sky = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\simplesky.g3dj"));
-		ball = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\golfballS.g3dj"));
 		putter = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\gun.g3dj"));
 
-		ModelInstance gball = new ModelInstance(ball, 0, 2, 0);
-		ModelInstance pputter = new ModelInstance(putter,0,0,0);
+		ModelInstance golfbol = new ModelInstance(golfball, 0, 1, 0);
 		ModelInstance skybox = new ModelInstance(sky);
-		ModelInstance ground = new ModelInstance(testfloor);
+		ModelInstance ground = new ModelInstance(testfloor, -256, 0, 256);
 
-		instances.add(gball);
-		instances.add(pputter);
+		instances.add(golfbol);
 		instances.add(skybox);
 		instances.add(ground);
 
