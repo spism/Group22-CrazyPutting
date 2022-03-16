@@ -202,6 +202,10 @@ public class PhysicsEngine
                 stateVector[2] = 0;
                 stateVector[3] = 0;
                 while(!atRest(stateVector[0],stateVector[1])) updateVector(true);
+                if((stateVector[0] > targetX - targetRadius && stateVector[0] < targetX + targetRadius) || (stateVector[1] > targetY - targetRadius && stateVector[1] < targetY + targetRadius))
+                {
+                    System.out.println("Hole reached!");
+                }
                 break;
             }
             updateVector(false);
