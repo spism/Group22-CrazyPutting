@@ -9,7 +9,7 @@ public class PhysicsEngine
     double grassKinetic, grassStatic;
     double sandKinetic, sandStatic;
     String heightProfile;
-    final double h = 0.05;
+    final double h = 0.09;
     final double g = 9.81;
     double[] stateVector = new double[4];
     static double[] newStateVector = new double[4];
@@ -148,7 +148,7 @@ public class PhysicsEngine
         if(s.equals("x")) return x;
         else if(s.equals("y")) return y;
         else if(s.equals("e")) return 2.71828;
-        else if(s.equals("pi")) return 3.18;
+        else if(s.equals("pi")) return 3.14;
         else if(s.equals("g")) return 9.81;
         else return Double.parseDouble(s);
     }
