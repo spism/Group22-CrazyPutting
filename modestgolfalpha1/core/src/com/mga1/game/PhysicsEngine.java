@@ -173,8 +173,8 @@ public class PhysicsEngine
 
         double kineticDenominator = Math.sqrt(speedX * speedX + speedY * speedY);
         double kineticCoeff = sandX1 < x && x < sandX2 && sandY1 < y && y < sandY2 ? sandKinetic : grassKinetic;
-        double slopeX = (getHeight(x,y) - getHeight(newX,y)) / limitZero;
-        double slopeY = (getHeight(x,y) - getHeight(x, newY)) / limitZero;
+        double slopeX = (getHeight(newX,y) - getHeight(x,y)) / limitZero;
+        double slopeY = (getHeight(x,newY) - getHeight(x, y)) / limitZero;
         System.out.println("height x: " + getHeight(x,y) + " " + getHeight(newX,y));
         System.out.println("height y: " + getHeight(x,y) + " " + getHeight(x,newY));
         System.out.println("slope x: " + slopeX + " slope y: " + slopeY);
@@ -238,7 +238,7 @@ public class PhysicsEngine
         PhysicsEngine test = new PhysicsEngine("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\core\\src\\com\\mga1\\game\\example_inputfile.txt");
         while(true)
         {
-            test.runSimulation(1,0,false);
+            test.runSimulation(2,0,false);
             if(Math.abs(test.stateVector[2]) < 0.1 && Math.abs(test.stateVector[3]) < 0.1)
             {
                 while(!test.atRest(test.stateVector[0],test.stateVector[1])) test.runSimulation(1,0,!test.atRest(test.stateVector[0],test.stateVector[1]));
