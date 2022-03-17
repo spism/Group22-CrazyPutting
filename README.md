@@ -1,5 +1,10 @@
 To start the physics engine, in the main method, when initializing the "test" object, in the constructor parameters define a filepath for an input file.  Then, call the method runSimulation with parameters initial x, initial y (starting points of balls), initial speed X, initial speed Y (starting put of ball in x and y directions) in the same order as mentioned.
 
+To start the game:
+First, please change all the filenames of those Textures and 3dModel inside "core\src\com\mga1\game\modgolf.java" to their absolute path.
+Then, please change the filename of the input file inside "core\src\com\mga1\game\PhysicsEngine.java" to its abosulute path.
+Finally, run the main method inside "desktop\src\com\mga1\game\DesktopLauncher.java".
+
  ------------------------------------------------------------------ Input file format ------------------------------------------------------------------
 The golf parameters must be defined in the following order, where each individual character/logical string of characters are separated by spaces:
 x0 = [x0]
