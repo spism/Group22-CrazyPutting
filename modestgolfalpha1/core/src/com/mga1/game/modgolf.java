@@ -88,16 +88,16 @@ public class modgolf extends ApplicationAdapter {
 
 		part.setUVRange(0,0,1,1);
 
-		for(int x = 0; x < divisions -1;  ++x){
-			for(int y = 0; y < divisions -1; ++y) {
+		for(int x = 0; x < divisions -1;  x++){
+			for(int y = 0; y < divisions -1; y++) {
 
-				VertexInfo v00 = new VertexInfo().set(new Vector3((x * (view)), phys.getHeight(x,y), y * -view), null, null, new Vector2(0,0));
+				VertexInfo v00 = new VertexInfo().set(new Vector3((x * (view)), (float)phys.getHeight(x,y), y * -view), null, null, new Vector2(0,0));
 
-				VertexInfo v10 = new VertexInfo().set(new Vector3((x+1) * view, phys.getHeight(x,y), y * -view), null, null, new Vector2(1,0));
+				VertexInfo v10 = new VertexInfo().set(new Vector3((x+1) * view, (float)phys.getHeight(x,y), y * -view), null, null, new Vector2(1,0));
 
-				VertexInfo v11 = new VertexInfo().set(new Vector3((x+1) * view, phys.getHeight(x,y), (y+1) * -view), null, null, new Vector2(1,1));
+				VertexInfo v11 = new VertexInfo().set(new Vector3((x+1) * view, (float)phys.getHeight(x,y), (y+1) * -view), null, null, new Vector2(1,1));
 
-				VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view)), phys.getHeight(x,y), (y+1) * -view), null, null, new Vector2(0,1));
+				VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view)), (float)phys.getHeight(x,y), (y+1) * -view), null, null, new Vector2(0,1));
 
 
 				part.rect(v00, v10, v11, v01);
@@ -189,9 +189,13 @@ public class modgolf extends ApplicationAdapter {
 	}
 
 	public void moveBall(double x, double y){
+		if (x <= -128 && x >= -200 || y <= -128 && y >= -200){
+			return;
+		}
 		float nx = ((Double)x).floatValue();
-		float ny = ((Double)y).floatValue();
-		golfbol.transform.setToTranslation(nx, 1, ny);
+		float nz = ((Double)y).floatValue();
+		float ny = (float)Math.pow((phys.getHeight(x,y)),100.0)*2+2;
+		golfbol.transform.setToTranslation(nx, ny, nz);
 
 	}
 	public Vector3 getBall(){

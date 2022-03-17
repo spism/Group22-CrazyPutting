@@ -80,7 +80,7 @@ public class PhysicsEngine
      * @param y is the y coordinate
      * @return the height for the coordinates
      */
-    public float getHeight(double x, double y)
+    public double getHeight(double x, double y)
     {
         Stack<String> ops = new Stack<>();
         Stack<Double> vals = new Stack<>();
@@ -127,7 +127,7 @@ public class PhysicsEngine
         }
         double result = vals.pop();
         //System.out.println(result);
-        return ((Double)result).floatValue();
+        return result;
     }
 
     /**
