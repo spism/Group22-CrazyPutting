@@ -20,5 +20,6 @@ Wherever an unknown variable is surrounded by "<>" brackets, any user input of n
    -> where there must be a pair of brackets surrounding each operation (x - y), ((x-y)/7), sin(((x-y)/7)), etc.
  - sandPitX and sandPitY, where a sample input could look like 1 < x < 3 (i.e. any two numbers, between which the unknown value will be sandwiched)
  
-Ratame slopy jak kokoti
+The slopes of the plane in directions (x,y) are calculated as tiny differences in height (getHeight(x,y)) over tiny differences of (x,y) respectively, found the errors marginal.
+ 
 
