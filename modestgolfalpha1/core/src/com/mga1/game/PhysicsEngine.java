@@ -9,7 +9,7 @@ public class PhysicsEngine
     double grassKinetic, grassStatic;
     double sandKinetic, sandStatic;
     String heightProfile;
-    final double h = 0.1;
+    final double h = 0.01;
     final double g = 9.81;
     double[] stateVector = new double[4];
     static double[] newStateVector = new double[4];
@@ -206,11 +206,12 @@ public class PhysicsEngine
      */
     public boolean atRest(double x, double y)
     {
+        double staticCoeff = sandX1 < x && x < sandX2 && sandY1 < y && y < sandY2 ? sandStatic : grassStatic;
         double limitZero = 0.000000000001;
         double derivativeX = (Math.abs(getHeight(x,y) - getHeight(x + limitZero,y))) / limitZero;
         double derivativeY = (Math.abs(getHeight(x,y) - getHeight(x,y + limitZero))) / limitZero;
         System.out.println(derivativeX + " " + derivativeY);
-        if(grassStatic > Math.sqrt(derivativeX * derivativeX + derivativeY * derivativeY)) return true;
+        if(staticCoeff > Math.sqrt(derivativeX * derivativeX + derivativeY * derivativeY)) return true;
         else return false;
     }
 
