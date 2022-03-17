@@ -18,6 +18,7 @@ import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.physics.bullet.collision._btMprSimplex_t;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -38,6 +39,8 @@ import java.awt.Color;
 
 public class modgolf extends ApplicationAdapter {
 
+	//phys
+	public PhysicsEngine phys;
 
 	//camera
 	public PerspectiveCamera cam;
@@ -52,6 +55,9 @@ public class modgolf extends ApplicationAdapter {
 	public Model ball;
 	public Model putter;
 	public Array<ModelInstance> instances = new Array<ModelInstance>();
+	public ModelInstance golfbol;
+	public ModelInstance putt;
+
 
 	//materials
 	public Material gball;
@@ -67,7 +73,7 @@ public class modgolf extends ApplicationAdapter {
 
 	public Model createshit(){
 
-		PhysicsEngine phys = new PhysicsEngine("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\core\\src\\com\\mga1\\game\\example_inputfile.txt");
+		phys = new PhysicsEngine("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\core\\src\\com\\mga1\\game\\example_inputfile.txt");
 
 		Material grass = new Material();
 		grass.set(new TextureAttribute(TextureAttribute.Diffuse, new Texture(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\Textures\\grass texture.png"))));
@@ -84,18 +90,20 @@ public class modgolf extends ApplicationAdapter {
 
 		for(int x = 0; x < divisions -1;  ++x){
 			for(int y = 0; y < divisions -1; ++y) {
-				VertexInfo v00 = new VertexInfo().set(new Vector3((x * (view)), (int)phys.getHeight(x,y), y * -view), null, null, new Vector2(0,0));
 
-				VertexInfo v10 = new VertexInfo().set(new Vector3((x+1) * view, (int)phys.getHeight(x,y), y * -view), null, null, new Vector2(1,0));
+				VertexInfo v00 = new VertexInfo().set(new Vector3((x * (view)), phys.getHeight(x,y), y * -view), null, null, new Vector2(0,0));
 
-				VertexInfo v11 = new VertexInfo().set(new Vector3((x+1) * view, (int)phys.getHeight(x,y), (y+1) * -view), null, null, new Vector2(1,1));
+				VertexInfo v10 = new VertexInfo().set(new Vector3((x+1) * view, phys.getHeight(x,y), y * -view), null, null, new Vector2(1,0));
 
-				VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view)), (int)phys.getHeight(x,y), (y+1) * -view), null, null, new Vector2(0,1));
+				VertexInfo v11 = new VertexInfo().set(new Vector3((x+1) * view, phys.getHeight(x,y), (y+1) * -view), null, null, new Vector2(1,1));
+
+				VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view)), phys.getHeight(x,y), (y+1) * -view), null, null, new Vector2(0,1));
 
 
 				part.rect(v00, v10, v11, v01);
 			}
 		}
+
 		return bbuilder.end();
 	}
 
@@ -117,20 +125,28 @@ public class modgolf extends ApplicationAdapter {
 		gballs.set(new TextureAttribute(TextureAttribute.Diffuse, new Texture(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\Textures\\Golfball.png"))));
 		Model golfball = bbuilder.createSphere(3,3,3,32,32,gballs,Usage.Position | Usage.Normal);
 		Model waterp = bbuilder.createBox(512f,1f,512f, water, Usage.Position | Usage.Normal);
+		Model skyfix = bbuilder.createBox(1000,1000,1000, water, Usage.Position | Usage.Normal);
+		Model flagpole = new Model();
+		flagpole = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\flagpole.g3dj"));
 
-
-		sky = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\simplesky.g3dj"));
-		putter = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\gun.g3dj"));
+		sky = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\fixedskyob.g3dj"));
+		putter = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\barbellputter.g3dj"));
 
 		ModelInstance penaltywater = new ModelInstance(waterp,0, -10, 0);
-		ModelInstance golfbol = new ModelInstance(golfball, 0, 1, 0);
+		golfbol = new ModelInstance(golfball, 0, 1, 0);
 		ModelInstance skybox = new ModelInstance(sky);
 		ModelInstance ground = new ModelInstance(testfloor, -256, 0, 256);
+		ModelInstance skybox2 = new ModelInstance(skyfix);
+		ModelInstance flag = new ModelInstance(flagpole, -128,-10,-128);
+		putt = new ModelInstance(putter,5,1,0);
 
+
+		instances.add(flag);
 		instances.add(penaltywater);
 		instances.add(golfbol);
 		instances.add(skybox);
 		instances.add(ground);
+		instances.add(putt);
 
 		modelBatch = new ModelBatch();
 		environment = new Environment();
@@ -152,6 +168,7 @@ public class modgolf extends ApplicationAdapter {
 
 	@Override
 	public void render () {
+		int i = 0;
 		camController.update();
 
 		Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -159,7 +176,29 @@ public class modgolf extends ApplicationAdapter {
 
 		modelBatch.begin(cam);
 		modelBatch.render(instances, environment);
+
+
+		while (true) {
+			phys.runSimulation(getBall().x, getBall().y);
+			moveBall(phys.stateVector[0], phys.stateVector[1]);
+
+			if (phys.stateVector[2] == 0 && phys.stateVector[3] == 0);
+				break;
+		}
 		modelBatch.end();
+	}
+
+	public void moveBall(double x, double y){
+		float nx = ((Double)x).floatValue();
+		float ny = ((Double)y).floatValue();
+		golfbol.transform.setToTranslation(nx, 1, ny);
+
+	}
+	public Vector3 getBall(){
+		Vector3 pos = new Vector3();
+		pos = golfbol.transform.getTranslation(pos);
+
+		return pos;
 	}
 
 	@Override

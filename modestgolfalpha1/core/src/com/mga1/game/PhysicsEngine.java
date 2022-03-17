@@ -80,7 +80,7 @@ public class PhysicsEngine
      * @param y is the y coordinate
      * @return the height for the coordinates
      */
-    public double getHeight(double x, double y)
+    public float getHeight(double x, double y)
     {
         Stack<String> ops = new Stack<>();
         Stack<Double> vals = new Stack<>();
@@ -127,7 +127,7 @@ public class PhysicsEngine
         }
         double result = vals.pop();
         //System.out.println(result);
-        return result;
+        return ((Double)result).floatValue();
     }
 
     /**
@@ -142,7 +142,7 @@ public class PhysicsEngine
         if(s.equals("x")) return x;
         else if(s.equals("y")) return y;
         else if(s.equals("e")) return 2.71828;
-        else if(s.equals("pi")) return 3.18;
+        else if(s.equals("pi")) return 3.14;
         else if(s.equals("g")) return 9.81;
         else return Double.parseDouble(s);
     }
@@ -226,7 +226,7 @@ public class PhysicsEngine
 
     public static void main(String[] args)
     {
-        PhysicsEngine test = new PhysicsEngine("C:\\Users\\mspisak\\IdeaProjects\\CrazyPutting\\src\\example_inputfile.txt");
+        PhysicsEngine test = new PhysicsEngine("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\core\\src\\com\\mga1\\game\\example_inputfile.txt");
         test.runSimulation(3,0);
     }
 }
