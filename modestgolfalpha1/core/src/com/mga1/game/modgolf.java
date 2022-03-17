@@ -40,7 +40,7 @@ import java.awt.Color;
 public class modgolf extends ApplicationAdapter {
 
 	//phys
-	public PhysicsEngine phys;
+	public PhysicsEngine phys = new PhysicsEngine("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\core\\src\\com\\mga1\\game\\example_inputfile.txt");
 
 	//camera
 	public PerspectiveCamera cam;
@@ -91,13 +91,13 @@ public class modgolf extends ApplicationAdapter {
 		for(int x = 0; x < divisions -1;  x++){
 			for(int y = 0; y < divisions -1; y++) {
 
-				VertexInfo v00 = new VertexInfo().set(new Vector3((x * (view)), (float)phys.getHeight(x,y), y * -view), null, null, new Vector2(0,0));
+				VertexInfo v00 = new VertexInfo().set(new Vector3((x * (view)), (float)phys.getHeight(x,y)*10, y * -view), null, null, new Vector2(0,0));
 
-				VertexInfo v10 = new VertexInfo().set(new Vector3((x+1) * view, (float)phys.getHeight(x,y), y * -view), null, null, new Vector2(1,0));
+				VertexInfo v10 = new VertexInfo().set(new Vector3((x+1) * view, (float)phys.getHeight(x,y)*10, y * -view), null, null, new Vector2(1,0));
 
-				VertexInfo v11 = new VertexInfo().set(new Vector3((x+1) * view, (float)phys.getHeight(x,y), (y+1) * -view), null, null, new Vector2(1,1));
+				VertexInfo v11 = new VertexInfo().set(new Vector3((x+1) * view, (float)phys.getHeight(x,y)*10, (y+1) * -view), null, null, new Vector2(1,1));
 
-				VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view)), (float)phys.getHeight(x,y), (y+1) * -view), null, null, new Vector2(0,1));
+				VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view)), (float)phys.getHeight(x,y)*10, (y+1) * -view), null, null, new Vector2(0,1));
 
 
 				part.rect(v00, v10, v11, v01);
@@ -129,15 +129,15 @@ public class modgolf extends ApplicationAdapter {
 		Model flagpole = new Model();
 		flagpole = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\flagpole.g3dj"));
 
-		sky = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\fixedskyob.g3dj"));
+		sky = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\simplesky.g3dj"));
 		putter = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\barbellputter.g3dj"));
 
-		ModelInstance penaltywater = new ModelInstance(waterp,0, -10, 0);
+		ModelInstance penaltywater = new ModelInstance(waterp,0, 1100, 0);
 		golfbol = new ModelInstance(golfball, 0, 1, 0);
 		ModelInstance skybox = new ModelInstance(sky);
 		ModelInstance ground = new ModelInstance(testfloor, -256, 0, 256);
 		ModelInstance skybox2 = new ModelInstance(skyfix);
-		ModelInstance flag = new ModelInstance(flagpole, -128,-10,-128);
+		ModelInstance flag = new ModelInstance(flagpole, (float)phys.targetX,(float)(phys.getHeight(phys.targetX,phys.targetY)*10)-8,(float)phys.targetY);
 		putt = new ModelInstance(putter,5,1,0);
 
 
@@ -179,23 +179,32 @@ public class modgolf extends ApplicationAdapter {
 
 
 		while (true) {
-			phys.runSimulation(getBall().x, getBall().y);
-			moveBall(phys.stateVector[0], phys.stateVector[1]);
+			phys.runSimulation(5, 0, false);
+			moveBall((float)phys.stateVector[0], (float)phys.stateVector[1]);
 
-			if (phys.stateVector[2] == 0 && phys.stateVector[3] == 0);
+			if (phys.targetX - phys.targetRadius < phys.stateVector[0] && phys.stateVector[0] < phys.targetX + phys.targetRadius && phys.targetY- phys.targetRadius < phys.stateVector[1] && phys.stateVector[1] < phys.targetY + phys.targetRadius ){
 				break;
+			}
+			if (phys.getHeight(phys.stateVector[0], phys.stateVector[1]) < 0) {
+				break;
+			}
+			if ((phys.stateVector[2]) < 0.1 && (phys.stateVector[3]) < 0.1){
+				while (!phys.atRest(phys.stateVector[0],phys.stateVector[1])){
+					phys.runSimulation(1,0,!phys.atRest(phys.stateVector[0],phys.stateVector[1]));
+				}
+				break;
+				}
 		}
 		modelBatch.end();
 	}
 
-	public void moveBall(double x, double y){
-		if (x <= -128 && x >= -200 || y <= -128 && y >= -200){
-			return;
-		}
-		float nx = ((Double)x).floatValue();
-		float nz = ((Double)y).floatValue();
-		float ny = (float)Math.pow((phys.getHeight(x,y)),100.0)*2+2;
-		golfbol.transform.setToTranslation(nx, ny, nz);
+	public void moveBall(float x, float y){
+
+		float nx = (float)x;
+		float nz = (float)y;
+		float ny = (float)(phys.getHeight(phys.stateVector[0],phys.stateVector[1]))*10;
+		golfbol.transform.setToTranslation(x, ny, y);
+		putt.transform.setToTranslation(x+10,ny,y);
 
 	}
 	public Vector3 getBall(){
