@@ -9,7 +9,7 @@ public class PhysicsEngine
     double grassKinetic, grassStatic;
     double sandKinetic, sandStatic;
     String heightProfile;
-    final double h = 0.01;
+    final double h = 0.05;
     final double g = 9.81;
     double[] stateVector = new double[4];
     static double[] newStateVector = new double[4];

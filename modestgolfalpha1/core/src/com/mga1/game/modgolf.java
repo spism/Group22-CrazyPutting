@@ -33,6 +33,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.graphics.g3d.model.data.ModelTexture;
 import jdk.internal.loader.Loader;
 import com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder.VertexInfo;
+import com.badlogic.gdx.Input.Keys;
 
 import java.awt.Color;
 
@@ -60,6 +61,7 @@ public class modgolf extends ApplicationAdapter {
 
 
 	//materials
+	public Material grass;
 	public Material gball;
 
 	//skybox etc
@@ -71,15 +73,15 @@ public class modgolf extends ApplicationAdapter {
 
 
 
-	public Model createshit(){
+	public Model createstuff(){
 
 		phys = new PhysicsEngine("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\core\\src\\com\\mga1\\game\\example_inputfile.txt");
 
-		Material grass = new Material();
+		grass = new Material();
 		grass.set(new TextureAttribute(TextureAttribute.Diffuse, new Texture(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\Textures\\grass texture.png"))));
 
 		final int divisions = 128;
-		final int dimension = 512;
+		final int dimension = 256;
 		final int view = dimension / divisions;
 
 		bbuilder.begin();
@@ -114,37 +116,45 @@ public class modgolf extends ApplicationAdapter {
 	@Override
 	public void create () {
 
-
-
+		Material grass2 = new Material();
+		grass2.set(new TextureAttribute(TextureAttribute.Diffuse, new Texture(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\Textures\\grass texture.png"))));
 		bbuilder = new ModelBuilder();
 
-		testfloor = createshit();
+		testfloor = createstuff();
 		Material water = new Material();
 		water.set(new TextureAttribute(TextureAttribute.Diffuse, new Texture(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\Textures\\water-pool.jpg"))));
 		Material gballs = new Material();
 		gballs.set(new TextureAttribute(TextureAttribute.Diffuse, new Texture(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\Textures\\Golfball.png"))));
 		Model golfball = bbuilder.createSphere(3,3,3,32,32,gballs,Usage.Position | Usage.Normal);
-		Model waterp = bbuilder.createBox(512f,1f,512f, water, Usage.Position | Usage.Normal);
+		Model waterp = bbuilder.createBox(256f,1f,256f, water, Usage.Position | Usage.Normal);
 		Model skyfix = bbuilder.createBox(1000,1000,1000, water, Usage.Position | Usage.Normal);
+		Model skyball = bbuilder.createSphere(-9000,-9000,-9000,64,64,water,Usage.Position | Usage.Normal);
 		Model flagpole = new Model();
+		Model grassp = bbuilder.createBox(256f,1f,256f,grass2, Usage.Position | Usage.Normal);
 		flagpole = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\flagpole.g3dj"));
 
 		sky = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\simplesky.g3dj"));
 		putter = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\models\\barbellputter.g3dj"));
 
-		ModelInstance penaltywater = new ModelInstance(waterp,0, 1100, 0);
-		golfbol = new ModelInstance(golfball, 0, 1, 0);
+		ModelInstance penaltywater = new ModelInstance(waterp,128, -10, 128);
+		ModelInstance penaltygrass = new ModelInstance(grassp,128, -8, 128);
+		golfbol = new ModelInstance(golfball, 0, 2, 0);
 		ModelInstance skybox = new ModelInstance(sky);
-		ModelInstance ground = new ModelInstance(testfloor, -256, 0, 256);
+		ModelInstance ground = new ModelInstance(testfloor);
 		ModelInstance skybox2 = new ModelInstance(skyfix);
-		ModelInstance flag = new ModelInstance(flagpole, (float)phys.targetX,(float)(phys.getHeight(phys.targetX,phys.targetY)*10)-8,(float)phys.targetY);
+		ModelInstance flag = new ModelInstance(flagpole, (float)phys.targetX+128,(float)(phys.getHeight(phys.targetX,phys.targetY)*10)-8,(float)(phys.targetY)+128);
 		putt = new ModelInstance(putter,5,1,0);
+		ModelInstance ball = new ModelInstance(skyball,0,0,0);
+
+		ground.transform.setToRotation(0,1,0,270);
+
+
 
 
 		instances.add(flag);
 		instances.add(penaltywater);
 		instances.add(golfbol);
-		instances.add(skybox);
+		instances.add(ball);
 		instances.add(ground);
 		instances.add(putt);
 
@@ -155,8 +165,8 @@ public class modgolf extends ApplicationAdapter {
 
 
 		cam = new PerspectiveCamera(70, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-		cam.position.set(50f, 50f, 50f);
-		cam.lookAt(0, 5, 0);
+		cam.position.set(-150f, 50f, 150f);
+		cam.lookAt(128f, 20f, 128f);
 		cam.near = 1f;
 		cam.far = 999999f;
 		cam.update();
@@ -178,6 +188,13 @@ public class modgolf extends ApplicationAdapter {
 		modelBatch.render(instances, environment);
 
 
+		if(Gdx.input.isKeyPressed(Keys.UP)){
+			phys.runSimulation(10,0,false);
+			moveBall((float)phys.stateVector[0], (float)phys.stateVector[1]);
+		}
+
+		boolean te = false;
+
 		while (true) {
 			phys.runSimulation(5, 0, false);
 			moveBall((float)phys.stateVector[0], (float)phys.stateVector[1]);
@@ -191,20 +208,22 @@ public class modgolf extends ApplicationAdapter {
 			if ((phys.stateVector[2]) < 0.1 && (phys.stateVector[3]) < 0.1){
 				while (!phys.atRest(phys.stateVector[0],phys.stateVector[1])){
 					phys.runSimulation(1,0,!phys.atRest(phys.stateVector[0],phys.stateVector[1]));
+					break;
 				}
-				break;
-				}
+			}
+
 		}
 		modelBatch.end();
+
 	}
 
 	public void moveBall(float x, float y){
 
 		float nx = (float)x;
 		float nz = (float)y;
-		float ny = (float)(phys.getHeight(phys.stateVector[0],phys.stateVector[1]))*10;
-		golfbol.transform.setToTranslation(x, ny, y);
-		putt.transform.setToTranslation(x+10,ny,y);
+		float ny = (float)(phys.getHeight(phys.stateVector[0],phys.stateVector[1]))*10+2;
+		golfbol.transform.setToTranslation(x+128, ny, y+128);
+		putt.transform.setToTranslation(x+128,ny,y+128);
 
 	}
 	public Vector3 getBall(){
