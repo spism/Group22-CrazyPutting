@@ -4,6 +4,7 @@ import java.util.Stack;
 public class PhysicsEngine
 {
     //
+    //
     double firstX, firstY, targetX, targetY, targetRadius;
     double sandX1, sandX2, sandY1, sandY2;
     double grassKinetic, grassStatic;
@@ -143,6 +144,7 @@ public class PhysicsEngine
 
     /**
      * This method updates the state vector
+     * to find new ball position
      */
     public void updateVector(boolean atRest)
     {
