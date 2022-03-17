@@ -1,6 +1,5 @@
 package com.mga1.game;
 
-
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -24,7 +23,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.Cell;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.ScreenUtils;
-import jdk.jfr.internal.settings.PeriodSetting;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.loader.ObjLoader;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
@@ -33,11 +31,10 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.graphics.g3d.model.data.ModelTexture;
-import jdk.internal.loader.Loader;
 import com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder.VertexInfo;
 import com.badlogic.gdx.Input.Keys;
 
-import java.awt.Color;
+
 
 
 public class modgolf extends Game{
