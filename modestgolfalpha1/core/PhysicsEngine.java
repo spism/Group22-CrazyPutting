@@ -220,18 +220,30 @@ public class PhysicsEngine
 
         double kineticCoeff = hasSand && sandX1 < xCoor && xCoor < sandX2 && sandY1 < yCoor && yCoor < sandY2 ? sandKinetic : grassKinetic;
         double acceleration = 0;
-        double denominator = Math.sqrt(xSpeed * xSpeed + ySpeed * ySpeed);
-        double denominator2 = Math.sqrt(slopeX * slopeX + slopeY * slopeY);
+        double pythagoreanSpeed = xSpeed * xSpeed + ySpeed * ySpeed;
+        double pythagoreanSlope = slopeX * slopeX + slopeY * slopeY;
+        double denominator = Math.sqrt(pythagoreanSpeed);
+        double denominator2 = Math.sqrt(pythagoreanSlope);
 
         if(x && !y)
         {
-            if(Math.abs(xSpeed * xSpeed + ySpeed * ySpeed) < h && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor)) acceleration = -g * slopeX - kineticCoeff * g * (slopeX / denominator2);
-            //else if(atRest(xCoor,yCoor)) acceleration = 0;
+            if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor)) acceleration = -g * slopeX - kineticCoeff * g * (slopeX / denominator2);
+            else if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
+            {
+                stateVector[2] = 0;
+                stateVector[3] = 0;
+                acceleration = 0;
+            }
             else acceleration = -g * slopeX - kineticCoeff * g * (xSpeed / denominator);
         }
         else if(y && !x) {
-            if(Math.abs(xSpeed * xSpeed + ySpeed * ySpeed) < h && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor)) acceleration = -g * slopeY - kineticCoeff * g * (slopeY / denominator2);
-            //else if(atRest(xCoor,yCoor)) acceleration = 0;
+            if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor)) acceleration = -g * slopeY - kineticCoeff * g * (slopeY / denominator2);
+            else if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
+            {
+                stateVector[2] = 0;
+                stateVector[3] = 0;
+                acceleration = 0;
+            }
             else acceleration = -g * slopeY - kineticCoeff * g * (ySpeed / denominator);
         }
         return acceleration;
@@ -287,7 +299,15 @@ public class PhysicsEngine
                 System.out.println(test.stateVector[1]);
             }
             test.runSimulation(2,0,false);
-            if(test.stateVector[2] == 0 && test.stateVector[3] == 0) break;
+            if(test.stateVector[2] == 0 && test.stateVector[3] == 0)
+            {
+                System.out.println("Final step: ");
+                System.out.println(test.stateVector[0]);
+                System.out.println(test.stateVector[1]);
+                System.out.println(test.stateVector[2]);
+                System.out.println(test.stateVector[1]);
+                break;
+            }
             count++;
         }
     }
