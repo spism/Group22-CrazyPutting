@@ -234,6 +234,28 @@ public class PhysicsEngine
         updateVector(atRest);
     }
 
+    public static double rungeKuttaSecondOrder (double x0, double y0, double x, double stepsize){
+        
+        int n = (int)((x-x0)/stepsize);
+        double y = y0;
+        double incrementBeginning, incrementMidpoint;
+        for (int i = 1; i<= n; i++){
+
+            incrementBeginning = stepsize * dydx(x0, y);
+            incrementMidpoint = stepsize * dydx(x0 + stepsize/2, y + incrementBeginning/2);
+
+            y += (incrementBeginning + 2 * incrementMidpoint)/6;
+
+            x0 += stepsize;
+        }
+        return y;
+    }
+
+    static double dydx(double x, double y)
+    {
+        return (x + y - 2);
+    }
+
     public static void main(String[] args)
     {
         PhysicsEngine test = new PhysicsEngine("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\core\\src\\com\\mga1\\game\\example_inputfile.txt");
