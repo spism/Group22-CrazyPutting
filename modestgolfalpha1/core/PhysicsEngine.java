@@ -165,11 +165,9 @@ public class PhysicsEngine
         double y = stateVector[1];
         double speedX = stateVector[2];
         double speedY = stateVector[3];
-
         double limitZero = 0.000000000001;
         double newX = x + limitZero;
         double newY = y + limitZero;
-
         double kineticDenominator = Math.sqrt(speedX * speedX + speedY * speedY);
         double kineticCoeff = sandX1 < x && x < sandX2 && sandY1 < y && y < sandY2 ? sandKinetic : grassKinetic;
         double slopeX = (getHeight(newX,y) - getHeight(x,y)) / limitZero;
@@ -284,6 +282,40 @@ public class PhysicsEngine
         updateVector();
     }
 
+    
+
+    
+    
+    public void newStateVectorUpdater_RK4(boolean atRest, String fx) {
+    		if(!atRest(stateVector[0],stateVector[1])) {
+    			for(int stateVectorInt=0;stateVectorInt<stateVector.length;stateVectorInt++) {
+    				newW_RK4(fx, stateVectorInt);
+    			}
+    		}
+    }
+    
+    
+    
+    public void newW_RK4(String fx, int stateVectorInt) {
+    	double[] new4k = new double[4];
+    		for(int k=1;k<5;k++) {
+    			new4k[k-1] = kEval(k, fx, stateVector[stateVectorInt]);
+    		}
+    		stateVector[stateVectorInt] += (new4k[0] + 2*new4k[1] + 2*new4k[2] + new4k[3])/6;
+    		}
+    	
+    
+    
+    public double kEval(int k, String fx, double w) {
+    	if(k==1) {
+    		return h*checkXY(fx, 0, 0);
+    	} else if (k==2 || k==3) {
+    		return h*checkXY(fx, h/2, w+kEval(k-1, fx, w));
+    	} else if (k == 4) {
+    		return h*checkXY(fx, h, w+kEval(k-1, fx, w));
+    	} else throw new IllegalArgumentException("eskere, smt wrong, check it");
+    }
+    
     public static void main(String[] args)
     {
         PhysicsEngine test = new PhysicsEngine("src\\example_inputfile.txt");
@@ -312,3 +344,7 @@ public class PhysicsEngine
         }
     }
 }
+    
+    
+    
+  
