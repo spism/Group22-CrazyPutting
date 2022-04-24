@@ -4,18 +4,20 @@ import java.util.Stack;
 
 public class PhysicsEngine
 {
-    double firstX, firstY, targetX, targetY, targetRadius;
-    double sandX1, sandX2, sandY1, sandY2;
-    double grassKinetic, grassStatic;
-    double sandKinetic, sandStatic;
-    String heightProfile;
-    final double h = 0.09;
-    final double g = 9.81;
-    double[] stateVector = new double[4];
-    static double[] newStateVector = new double[4];
-    boolean initSpeedsDefined = false;
+    private boolean hasSand = false;
+    public double firstX, firstY, targetX, targetY, targetRadius;
+    public double sandX1, sandX2, sandY1, sandY2;
+    private double grassKinetic, grassStatic;
+    private double sandKinetic, sandStatic;
+    private double currT;
+    private String heightProfile;
+    private final double h = 0.000001;
+    private final double g = 9.81;
+    public double[] stateVector = new double[4];
+    private boolean initSpeedsDefined = false;
     public PhysicsEngine(String filename)
     {
+        currT = 0;
         try
         {
             FileReader fr = new FileReader(filename);
@@ -53,6 +55,7 @@ public class PhysicsEngine
                 }
                 else if(lineIndex == 4)
                 {
+                    hasSand = true;
                     sandX1 = Double.parseDouble(arr[2]);
                     sandX2 = Double.parseDouble(arr[6]);
                     arr = br.readLine().split(" ");
@@ -83,7 +86,7 @@ public class PhysicsEngine
      * @param y is the y coordinate
      * @return the height for the coordinates
      */
-    public double getHeight(double x, double y)
+    public double function(double x, double y)
     {
         Stack<String> ops = new Stack<>();
         Stack<Double> vals = new Stack<>();
@@ -154,48 +157,81 @@ public class PhysicsEngine
     }
 
     /**
-     * This method updates the state vector using Euler's method.  It increments the current y and x position based on the speed
-     * and it increments the current x and y speed based on the acceleration.  The acceleration (in a certain direction) is calculated
-     * using the equations x'' = -g * ( dh / dx ) - muk * g ( vx / sqrt (vx ^ 2 + vy ^ 2 ) ) and
-     * y'' = -g * ( dh / dy ) - muk * g ( vy / sqrt (vx ^ 2 + vy ^ 2 ) )
-     * @param atRest is the state of the ball when the velocities reach 0
+     * This method updates the state vector using Euler's method.  It is used to approximate the motion of a ball on a slope given by the input file
+     * height profile line.
      */
-    public void updateVector(boolean atRest)
+    public double[] updateVectorEuler(double[] stateVector)
     {
-        double x = stateVector[0];
-        double y = stateVector[1];
-        double speedX = stateVector[2];
-        double speedY = stateVector[3];
-
-        double limitZero = 0.000000000001;
-        double newX = x + limitZero;
-        double newY = y + limitZero;
-
-        double kineticDenominator = Math.sqrt(speedX * speedX + speedY * speedY);
-        double kineticCoeff = sandX1 < x && x < sandX2 && sandY1 < y && y < sandY2 ? sandKinetic : grassKinetic;
-        double slopeX = (getHeight(newX,y) - getHeight(x,y)) / limitZero;
-        double slopeY = (getHeight(x,newY) - getHeight(x, y)) / limitZero;
-        System.out.println("height x: " + getHeight(x,y) + " " + getHeight(newX,y));
-        System.out.println("height y: " + getHeight(x,y) + " " + getHeight(x,newY));
-        System.out.println("slope x: " + slopeX + " slope y: " + slopeY);
-        double secondTermX = atRest ? kineticCoeff * g * (slopeX / Math.sqrt(slopeX * slopeX + slopeY * slopeY)) : kineticCoeff * g * (speedX / kineticDenominator);
-        double secondTermY = atRest ? kineticCoeff * g * (slopeY / Math.sqrt(slopeX * slopeX + slopeY * slopeY)) : kineticCoeff * g * (speedY / kineticDenominator);
-        double xAccel = -g * slopeX - secondTermX;
-        double yAccel = -g * slopeY - secondTermY;
+        double[] stepVector = new double[4];
+        double xAccel = getAccel(true,false);
+        double yAccel = getAccel(false,true);
         //System.out.println(secondTermX + " " + secondTermY);
         //System.out.println("x acceleration: " + xAccel + " y acceleration: " + yAccel);
 
-        newStateVector[0] = Math.abs(stateVector[2]) < 0.1 ? 0 : stateVector[2];
-        newStateVector[1] = Math.abs(stateVector[3]) < 0.1 ? 0 : stateVector[3];
-        newStateVector[2] = xAccel;
-        newStateVector[3] = yAccel;
+        stepVector[0] = stateVector[2];
+        stepVector[1] = stateVector[3];
+        stepVector[2] = xAccel;
+        stepVector[3] = yAccel;
         for(int i = 0; i < stateVector.length; i++)
         {
-            System.out.println(stateVector[i] + " + " + h + " * " + newStateVector[i]);
-            stateVector[i] = stateVector[i] + h * newStateVector[i];
-            System.out.println(stateVector[i]);
+            //System.out.println(stateVector[i] + " + " + h + " * " + stepVector[i]);
+            stateVector[i] = stateVector[i] + h * stepVector[i];
+            //System.out.println(stateVector[i]);
         }
-        System.out.println();
+        //System.out.println();
+        return stateVector;
+    }
+
+    /**
+     * Used to get the acceleration of the ball at the current point, so that it can be used to increment the state vector.  It uses the current state vector.
+     * This method should only be used for internal acceleration requirements, and as such it is private.
+     * @param x should be the only true variable if the x acceleration is required
+     * @param y should be the only true variable if the y acceleration is required
+     * @return the x or y acceleration based on the parameters
+     */
+    private double getAccel(boolean x, boolean y)
+    {
+        double xCoor = stateVector[0];
+        double yCoor = stateVector[1];
+        double xSpeed = stateVector[2];
+        double ySpeed = stateVector[3];
+
+        double limitZero = 0.000000000001;
+        double newX = xCoor + limitZero;
+        double newY = yCoor + limitZero;
+
+        double slopeX = (function(newX,yCoor) - function(xCoor,yCoor)) / limitZero;
+        double slopeY = (function(xCoor,newY) - function(xCoor, yCoor)) / limitZero;
+
+        double kineticCoeff = hasSand && sandX1 < xCoor && xCoor < sandX2 && sandY1 < yCoor && yCoor < sandY2 ? sandKinetic : grassKinetic;
+        double acceleration = 0;
+        double pythagoreanSpeed = xSpeed * xSpeed + ySpeed * ySpeed;
+        double pythagoreanSlope = slopeX * slopeX + slopeY * slopeY;
+        double denominator = Math.sqrt(pythagoreanSpeed);
+        double denominator2 = Math.sqrt(pythagoreanSlope);
+
+        if(x && !y)
+        {
+            if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor)) acceleration = -g * slopeX - kineticCoeff * g * (slopeX / denominator2);
+            else if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
+            {
+                stateVector[2] = 0;
+                stateVector[3] = 0;
+                acceleration = 0;
+            }
+            else acceleration = -g * slopeX - kineticCoeff * g * (xSpeed / denominator);
+        }
+        else if(y && !x) {
+            if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor)) acceleration = -g * slopeY - kineticCoeff * g * (slopeY / denominator2);
+            else if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
+            {
+                stateVector[2] = 0;
+                stateVector[3] = 0;
+                acceleration = 0;
+            }
+            else acceleration = -g * slopeY - kineticCoeff * g * (ySpeed / denominator);
+        }
+        return acceleration;
     }
 
     /**
@@ -206,21 +242,21 @@ public class PhysicsEngine
      */
     public boolean atRest(double x, double y)
     {
-        double staticCoeff = sandX1 < x && x < sandX2 && sandY1 < y && y < sandY2 ? sandStatic : grassStatic;
+        double staticCoeff = hasSand && sandX1 < x && x < sandX2 && sandY1 < y && y < sandY2 ? sandStatic : grassStatic;
         double limitZero = 0.000000000001;
-        double derivativeX = (Math.abs(getHeight(x,y) - getHeight(x + limitZero,y))) / limitZero;
-        double derivativeY = (Math.abs(getHeight(x,y) - getHeight(x,y + limitZero))) / limitZero;
-        System.out.println(derivativeX + " " + derivativeY);
-        if(staticCoeff > Math.sqrt(derivativeX * derivativeX + derivativeY * derivativeY)) return true;
-        else return false;
+        double derivativeX = (Math.abs(function(x,y) - function(x + limitZero,y))) / limitZero;
+        double derivativeY = (Math.abs(function(x,y) - function(x,y + limitZero))) / limitZero;
+        //System.out.println(derivativeX + " " + derivativeY);
+        return staticCoeff > Math.sqrt(derivativeX * derivativeX + derivativeY * derivativeY);
     }
 
     /**
      * Updates the state vector based on some conditions given an initial speed in the X and Y direction
      * @param initSpeedX is the initial speed in the X direction
      * @param initSpeedY is the initial speed in the Y direction
+     * @param solver is the selected solver.  0 means Euler's method, 1 means Runge-Kutta 2nd order, 2 means Runge-Kutta 4th order
      */
-    public void runSimulation(double initSpeedX, double initSpeedY, boolean atRest)
+    public void runSimulation(double initSpeedX, double initSpeedY, int solver)
     {
         if(!initSpeedsDefined)
         {
@@ -231,38 +267,135 @@ public class PhysicsEngine
             initSpeedsDefined = true;
         }
 
-        updateVector(atRest);
+        if(solver == 0) stateVector = updateVectorEuler(stateVector);
+        else if(solver == 1) stateVector = updateVectorRK2(stateVector);
+        else if(solver == 2) stateVector = updateVectorRK4(stateVector);
+        else throw new IllegalArgumentException("Nonexistent solver!");
     }
 
-    public double rungeKuttaSecondOrder (double x0, double y0, double x, double stepsize){
-        
-        int n = (int)((x-x0)/stepsize);
+    /**
+     * The Runge-Kutta 2nd order method.
+     * @param w is the current iteration of the variable to be changed
+     * @param a no idea what this is
+     * @return the equation result except for the addition of w
+     */
+    public double RK2(double w, double a) // what is a?
+    {
+        return h * ((1 - (1 / (2 * a))) * function(currT,w)) + (1 / (2 * a)) * function(currT + a * h,w + a * h * function(currT,w));
+    }
+
+    /**
+     * Updates the state vector once using RK2.
+     * @param stateVector is the current iteration of the state vector
+     * @return the next iteration of the state vector
+     */
+    public double[] updateVectorRK2(double[] stateVector)
+    {
+        for(int i = 0; i < stateVector.length; i++)
+        {
+            stateVector[i] += RK2(stateVector[i],0.5);
+        }
+        currT += h;
+        return stateVector;
+    }
+
+    public double rungeKuttaSecondOrder (double x0, double y0, double x)
+    {
+        int n = (int)((x-x0)/h);
         double y = y0;
         double incrementBeginning, incrementMidpoint;
         for (int i = 1; i<= n; i++){
 
-            incrementBeginning = stepsize * getHeight(x0, y);
-            incrementMidpoint = stepsize * getHeight(x0 + stepsize/2, y + incrementBeginning/2);
+            incrementBeginning = h * function(x0, y);
+            incrementMidpoint = h * function(x0 + h/2, y + incrementBeginning/2);
 
             y += (incrementBeginning + 2 * incrementMidpoint)/6;
 
-            x0 += stepsize;
+            x0 += h;
         }
         return y;
     }
 
+    public void newStateVectorUpdater_RK4(String fx) {
+        if(!atRest(stateVector[0],stateVector[1])) {
+            for(int stateVectorInt=0;stateVectorInt<stateVector.length;stateVectorInt++) {
+                newW_RK4(stateVectorInt);
+            }
+        }
+        currT += h;
+    }
+
+    public void newW_RK4(int stateVectorInt) {
+        double[] new4k = new double[4];
+        for(int k=1;k<5;k++) {
+            new4k[k-1] = kEval(k,stateVector[stateVectorInt]);
+        }
+        stateVector[stateVectorInt] += (new4k[0] + 2*new4k[1] + 2*new4k[2] + new4k[3])/6;
+    }
+
+    public double kEval(int k,double w) {
+        if(k==1) return h * function(currT, w);
+        else if (k==2 || k==3) return h*function(currT + h/2, w + (kEval(k-1, w) / 2));
+        else if (k == 4) return h*function(currT + h, w+kEval(k-1, w));
+        else throw new IllegalArgumentException("Invalid input k");
+    }
+
+    /**
+     * Increments the state vector once using RK4.
+     * @param stateVector is the current state vector
+     * @return the next iteration of the state vector
+     */
+    public double[] updateVectorRK4(double[] stateVector)
+    {
+        for(int i = 0; i < stateVector.length; i++)
+        {
+            stateVector[i] = RK4(stateVector[i]);
+        }
+        currT += h;
+        return stateVector;
+    }
+
+    /**
+     * This is the Runge-Kutta 4th order method.  It is used to handle the bulk of the physics for the game.
+     * @param w is the current iteration of the variable
+     * @return the result of the equation except for the addition of the w variable
+     */
+    public double RK4(double w)
+    {
+        double[] k = new double[4];
+        k[0] = h * function(currT, w);
+        k[1] = h * function(currT + h/2,w + k[0]);
+        k[2] = h * function(currT + h/2,w + k[1]);
+        k[3] = h * function(currT + h,w + k[2]);
+        return (k[0] + 2 * k[1] + 2 * k[2] + k[3])/6;
+    }
+
     public static void main(String[] args)
     {
-        PhysicsEngine test = new PhysicsEngine("C:\\Users\\liams\\Documents\\Java Projects\\Shithole\\Group22-phase-one\\modestgolfalpha1\\core\\src\\com\\mga1\\game\\example_inputfile.txt");
+        PhysicsEngine test = new PhysicsEngine("src\\example_inputfile.txt");
+        int count = 0;
         while(true)
         {
-            test.runSimulation(2,0,false);
-            if(Math.abs(test.stateVector[2]) < 0.1 && Math.abs(test.stateVector[3]) < 0.1)
+            if(count % 1000000 == 0)
             {
-                while(!test.atRest(test.stateVector[0],test.stateVector[1])) test.runSimulation(1,0,!test.atRest(test.stateVector[0],test.stateVector[1]));
+                System.out.println("One step: ");
+                System.out.println(test.stateVector[0]);
+                System.out.println(test.stateVector[1]);
+                System.out.println(test.stateVector[2]);
+                System.out.println(test.stateVector[1]);
+            }
+            if(test.targetX - test.targetRadius < test.stateVector[0] && test.stateVector[0] < test.targetX + test.targetRadius && test.targetY - test.targetRadius < test.stateVector[1] && test.stateVector[1] < test.targetY + test.targetRadius) break;
+            test.runSimulation(2,0,1);
+            if(test.stateVector[2] == 0 && test.stateVector[3] == 0)
+            {
+                System.out.println("Final step: ");
+                System.out.println(test.stateVector[0]);
+                System.out.println(test.stateVector[1]);
+                System.out.println(test.stateVector[2]);
+                System.out.println(test.stateVector[1]);
                 break;
             }
+            count++;
         }
     }
 }
-
