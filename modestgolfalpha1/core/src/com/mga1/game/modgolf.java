@@ -93,13 +93,13 @@ public class modgolf extends Game{
 		for(int x = 0; x < divisions -1;  x++){
 			for(int y = 0; y < divisions -1; y++) {
 
-				VertexInfo v00 = new VertexInfo().set(new Vector3((x * (view)), (float)phys.getHeight(x,y), y * -view), null, null, new Vector2(0,0));
+				VertexInfo v00 = new VertexInfo().set(new Vector3((x * (view)), (float)phys.function(x,y), y * -view), null, null, new Vector2(0,0));
 
-				VertexInfo v10 = new VertexInfo().set(new Vector3((x+1) * view, (float)phys.getHeight(x+1,y), y * -view), null, null, new Vector2(1,0));
+				VertexInfo v10 = new VertexInfo().set(new Vector3((x+1) * view, (float)phys.function(x+1,y), y * -view), null, null, new Vector2(1,0));
 
-				VertexInfo v11 = new VertexInfo().set(new Vector3((x+1) * view, (float)phys.getHeight(x+1,y+1), (y+1) * -view), null, null, new Vector2(1,1));
+				VertexInfo v11 = new VertexInfo().set(new Vector3((x+1) * view, (float)phys.function(x+1,y+1), (y+1) * -view), null, null, new Vector2(1,1));
 
-				VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view)), (float)phys.getHeight(x,y+1), (y+1) * -view), null, null, new Vector2(0,1));
+				VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view)), (float)phys.function(x,y+1), (y+1) * -view), null, null, new Vector2(0,1));
 
 
 				part.rect(v00, v10, v11, v01);
@@ -144,7 +144,7 @@ public class modgolf extends Game{
 		ModelInstance skybox = new ModelInstance(sky);
 		ModelInstance ground = new ModelInstance(testfloor,0,0,256);
 		ModelInstance skybox2 = new ModelInstance(skyfix);
-		ModelInstance flag = new ModelInstance(flagpole, (float)phys.targetX+64,(float)(phys.getHeight(phys.targetX,phys.targetY))-8,(float)(phys.targetY)+192);
+		ModelInstance flag = new ModelInstance(flagpole, (float)phys.targetX+64,(float)(phys.function(phys.targetX,phys.targetY))-8,(float)(phys.targetY)+192);
 		putt = new ModelInstance(putter,5,1,0);
 		ModelInstance ball = new ModelInstance(skyball,0,0,0);
 
@@ -196,19 +196,19 @@ public class modgolf extends Game{
 					cam.position.set(-64f, 50f, 256f);
 					cam.lookAt(golfbol.transform.getTranslation(new Vector3()));
 					cam.update();
-					System.out.println(phys.getHeight(phys.stateVector[0], phys.stateVector[1]));
-					phys.runSimulation(5, 0, false);
+					System.out.println(phys.function(phys.stateVector[0], phys.stateVector[1]));
+					phys.runSimulation(5, 0, 1);
 					moveBall((float) phys.stateVector[0], (float) phys.stateVector[1]);
 
 					if (phys.targetX - phys.targetRadius < phys.stateVector[0] && phys.stateVector[0] < phys.targetX + phys.targetRadius && phys.targetY - phys.targetRadius < phys.stateVector[1] && phys.stateVector[1] < phys.targetY + phys.targetRadius) {
 						System.out.println("You Win!");
 					}
-					if (phys.getHeight(phys.stateVector[0], phys.stateVector[1]) <= -0.8) {
+					if (phys.function(phys.stateVector[0], phys.stateVector[1]) <= -0.8) {
 						System.out.println("You Suck!");
 					}
 					if ((phys.stateVector[2]) < 0.1 && (phys.stateVector[3]) < 0.1) {
 						while (!phys.atRest(phys.stateVector[0], phys.stateVector[1])) {
-							phys.runSimulation(1, 0, !phys.atRest(phys.stateVector[0], phys.stateVector[1]));
+							phys.runSimulation(1, 0, 0);
 
 						}
 
@@ -222,7 +222,7 @@ public class modgolf extends Game{
 
 		float nx = (float)x;
 		float nz = (float)y;
-		float ny = (float)(phys.getHeight(phys.stateVector[0],phys.stateVector[1]))+1.3f;
+		float ny = (float)(phys.function(phys.stateVector[0],phys.stateVector[1]))+1.3f;
 		golfbol.transform.setToTranslation(x+64, ny, -(y-192));
 		putt.transform.setToTranslation(x+64,ny,-(y-192));
 
