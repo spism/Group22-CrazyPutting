@@ -1,5 +1,6 @@
 package com.mga1.game;
 import java.io.*;
+import java.util.Random;
 import java.util.Stack;
 
 public class PhysicsEngine
@@ -196,7 +197,7 @@ public class PhysicsEngine
         double xSpeed = stateVector[2];
         double ySpeed = stateVector[3];
 
-        double limitZero = 0.000000000001;
+        double limitZero = 0.000000000001; // lowest possible number before resulting in larger errors in computations
         double newX = xCoor + limitZero;
         double newY = yCoor + limitZero;
 
@@ -374,10 +375,10 @@ public class PhysicsEngine
 
     public double[] ruleBasedBot(int solver)
     {
-        for(double ySpeed = -targetY; ySpeed < targetY; ySpeed = ySpeed + targetRadius)
+        for(double ySpeed = -targetY * grassKinetic; ySpeed < targetY; ySpeed = ySpeed + targetRadius)
         {
             System.out.println("Trying new Y speed!");
-            for(double xSpeed = -targetX; xSpeed < targetX; xSpeed = xSpeed + targetRadius)
+            for(double xSpeed = -targetX * grassKinetic; xSpeed < targetX; xSpeed = xSpeed + targetRadius)
             {
                 System.out.println("Trying new X speed!");
                 stateVector[0] = firstX;
@@ -401,33 +402,43 @@ public class PhysicsEngine
 
     public double[] hillClimbing(int solver)
     {
-        double[] speeds = {-targetY,-targetX};
-        double closestDistance = Integer.MAX_VALUE;
-        if(inHole(stateVector[0],stateVector[1])) return speeds;
+        boolean solutionFound = false;
+        double[] currState = new double[4];
+        Random random = new Random(System.currentTimeMillis());
+        double prevX = 0;
+        double prevY = 0;
+        double XSpeed = (random.nextInt(2) - 1) * random.nextDouble(10);
+        double YSpeed = (random.nextInt(2) - 1) * random.nextDouble(10);
+        double currBest = 0;
+        double goalState = targetX * targetX + targetY * targetY;
+        if(inHole(currState[0],currState[1])) return currState;
         else
         {
-            while(!inHole(stateVector[0],stateVector[1])) // need to loop until solution is found, maybe while(true)
+            while(XSpeed - prevX < h && YSpeed - prevY < h)
             {
-                speeds[0] += targetRadius;
-                speeds[1] += targetRadius;
-                stateVector[0] = firstX;
-                stateVector[1] = firstY;
-                stateVector[2] = speeds[0];
-                stateVector[3] = speeds[1];
+                currState[2] = XSpeed;
+                currState[3] = YSpeed;
+                stateVector[0] = 0;
+                stateVector[1] = 0;
+                stateVector[2] = currState[2];
+                stateVector[3] = currState[3];
                 while(stateVector[2] != 0 || stateVector[3] != 0)
                 {
-                    runSimulation(speeds[0], speeds[1], solver);
-                    if(inHole(stateVector[0],stateVector[1])) return speeds;
-                    else if(inWater(stateVector[0],stateVector[1])) break;
+                    runSimulation(currState[2],currState[3],solver);
+                    if(inWater(stateVector[0],stateVector[1])) break;
                 }
-                double euclideanDistance = Math.sqrt(stateVector[0] * stateVector[0] + stateVector[1] * stateVector[1]);
-                if(euclideanDistance < closestDistance)
+                double euclideanDistance = stateVector[0] * stateVector[0] + stateVector[1] * stateVector[1];
+                if(inHole(stateVector[0],stateVector[1]))
                 {
-                    closestDistance = euclideanDistance;
-                    //somehow use new state for faster AI
+                    return currState;
+                }
+                else if(goalState - euclideanDistance < goalState - currBest)
+                {
+                    currBest = euclideanDistance;
                 }
             }
         }
+        return currState;
     }
 
     private boolean inHole(double x, double y)
