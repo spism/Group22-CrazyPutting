@@ -11,7 +11,7 @@ public class PhysicsEngine
     private double sandKinetic, sandStatic;
     private double currT;
     private String heightProfile;
-    private final double h = 0.000001;
+    private final double h = 0.00001;
     private final double g = 9.81;
     public double[] stateVector = new double[4];
     private boolean initSpeedsDefined = false;
@@ -221,7 +221,8 @@ public class PhysicsEngine
             }
             else acceleration = -g * slopeX - kineticCoeff * g * (xSpeed / denominator);
         }
-        else if(y && !x) {
+        else if(y && !x)
+        {
             if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor)) acceleration = -g * slopeY - kineticCoeff * g * (slopeY / denominator2);
             else if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
             {
@@ -279,7 +280,7 @@ public class PhysicsEngine
      * @param a no idea what this is
      * @return the equation result except for the addition of w
      */
-    public double RK2(double w, double a) // what is a?
+    private double RK2(double w, double a) // what is a?
     {
         return h * ((1 - (1 / (2 * a))) * function(currT,w)) + (1 / (2 * a)) * function(currT + a * h,w + a * h * function(currT,w));
     }
@@ -289,11 +290,12 @@ public class PhysicsEngine
      * @param stateVector is the current iteration of the state vector
      * @return the next iteration of the state vector
      */
-    public double[] updateVectorRK2(double[] stateVector)
+    private double[] updateVectorRK2(double[] stateVector)
     {
         for(int i = 0; i < stateVector.length; i++)
         {
-            stateVector[i] += RK2(stateVector[i],0.5);
+            //System.out.println(stateVector[i] + " + " + RK2(stateVector[i],2/3));
+            stateVector[i] += RK2(stateVector[i],2/3);
         }
         currT += h;
         return stateVector;
@@ -345,7 +347,7 @@ public class PhysicsEngine
      * @param stateVector is the current state vector
      * @return the next iteration of the state vector
      */
-    public double[] updateVectorRK4(double[] stateVector)
+    private double[] updateVectorRK4(double[] stateVector)
     {
         for(int i = 0; i < stateVector.length; i++)
         {
@@ -360,7 +362,7 @@ public class PhysicsEngine
      * @param w is the current iteration of the variable
      * @return the result of the equation except for the addition of the w variable
      */
-    public double RK4(double w)
+    private double RK4(double w)
     {
         double[] k = new double[4];
         k[0] = h * function(currT, w);
@@ -370,10 +372,81 @@ public class PhysicsEngine
         return (k[0] + 2 * k[1] + 2 * k[2] + k[3])/6;
     }
 
+    public double[] ruleBasedBot(int solver)
+    {
+        for(double ySpeed = -targetY; ySpeed < targetY; ySpeed = ySpeed + targetRadius)
+        {
+            System.out.println("Trying new Y speed!");
+            for(double xSpeed = -targetX; xSpeed < targetX; xSpeed = xSpeed + targetRadius)
+            {
+                System.out.println("Trying new X speed!");
+                stateVector[0] = firstX;
+                stateVector[1] = firstY;
+                stateVector[2] = xSpeed;
+                stateVector[3] = ySpeed;
+                while(true)
+                {
+                    runSimulation(xSpeed,ySpeed,solver);
+                    if(inHole(stateVector[0],stateVector[1]))
+                    {
+                        return new double[]{xSpeed,ySpeed};
+                    }
+                    if(inWater(stateVector[0],stateVector[1])) break;
+                    if(stateVector[2] == 0 && stateVector[3] == 0) break;
+                }
+            }
+        }
+        return null;
+    }
+
+    public double[] hillClimbing(int solver)
+    {
+        double[] speeds = {-targetY,-targetX};
+        double closestDistance = Integer.MAX_VALUE;
+        if(inHole(stateVector[0],stateVector[1])) return speeds;
+        else
+        {
+            while(!inHole(stateVector[0],stateVector[1])) // need to loop until solution is found, maybe while(true)
+            {
+                speeds[0] += targetRadius;
+                speeds[1] += targetRadius;
+                stateVector[0] = firstX;
+                stateVector[1] = firstY;
+                stateVector[2] = speeds[0];
+                stateVector[3] = speeds[1];
+                while(stateVector[2] != 0 || stateVector[3] != 0)
+                {
+                    runSimulation(speeds[0], speeds[1], solver);
+                    if(inHole(stateVector[0],stateVector[1])) return speeds;
+                    else if(inWater(stateVector[0],stateVector[1])) break;
+                }
+                double euclideanDistance = Math.sqrt(stateVector[0] * stateVector[0] + stateVector[1] * stateVector[1]);
+                if(euclideanDistance < closestDistance)
+                {
+                    closestDistance = euclideanDistance;
+                    //somehow use new state for faster AI
+                }
+            }
+        }
+    }
+
+    private boolean inHole(double x, double y)
+    {
+        return targetX - targetRadius < x && x < targetX + targetRadius && targetY - targetRadius < y && y < targetY + targetRadius;
+    }
+
+    private boolean inWater(double x, double y)
+    {
+        return function(x,y) < 0;
+    }
+
     public static void main(String[] args)
     {
         PhysicsEngine test = new PhysicsEngine("src\\example_inputfile.txt");
-        int count = 0;
+        double[] speeds = test.ruleBasedBot(0);
+        if(speeds != null) System.out.println("Found speeds!");
+        else System.out.println("No speeds found!");
+        /*int count = 0;
         while(true)
         {
             if(count % 1000000 == 0)
@@ -385,7 +458,7 @@ public class PhysicsEngine
                 System.out.println(test.stateVector[1]);
             }
             if(test.targetX - test.targetRadius < test.stateVector[0] && test.stateVector[0] < test.targetX + test.targetRadius && test.targetY - test.targetRadius < test.stateVector[1] && test.stateVector[1] < test.targetY + test.targetRadius) break;
-            test.runSimulation(2,0,1);
+            test.runSimulation(3,0,0);
             if(test.stateVector[2] == 0 && test.stateVector[3] == 0)
             {
                 System.out.println("Final step: ");
@@ -396,6 +469,6 @@ public class PhysicsEngine
                 break;
             }
             count++;
-        }
+        }*/
     }
 }
