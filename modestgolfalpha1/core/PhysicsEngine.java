@@ -270,77 +270,33 @@ public class PhysicsEngine
         }
 
         if(solver == 0) stateVector = updateVectorEuler(stateVector);
-        else if(solver == 1) stateVector = updateVectorRK2(stateVector);
+        else if(solver == 1) RK2();
         else if(solver == 2) RK4();
         else throw new IllegalArgumentException("Nonexistent solver!");
     }
 
     /**
      * The Runge-Kutta 2nd order method.
-     * @param w is the current iteration of the variable to be changed
-     * @param a no idea what this is
-     * @return the equation result except for the addition of w
      */
-    private double RK2(double w, double a) // what is a?
+    private void RK2()
     {
-        return h * ((1 - (1 / (2 * a))) * function(currT,w)) + (1 / (2 * a)) * function(currT + a * h,w + a * h * function(currT,w));
-    }
+        double fx = getAccel(true,false,stateVector);
+        double fy = getAccel(false,true,stateVector);
 
-    /**
-     * Updates the state vector once using RK2.
-     * @param stateVector is the current iteration of the state vector
-     * @return the next iteration of the state vector
-     */
-    private double[] updateVectorRK2(double[] stateVector)
-    {
-        for(int i = 0; i < stateVector.length; i++)
-        {
-            //System.out.println(stateVector[i] + " + " + RK2(stateVector[i],2/3));
-            stateVector[i] += RK2(stateVector[i],2/3);
-        }
-        currT += h;
-        return stateVector;
-    }
+        double[] newStateVector = new double[4];
 
-    public double rungeKuttaSecondOrder (double x0, double y0, double x)
-    {
-        int n = (int)((x-x0)/h);
-        double y = y0;
-        double incrementBeginning, incrementMidpoint;
-        for (int i = 1; i<= n; i++){
+        newStateVector[0] = stateVector[0] + (2 * h) / 3 * stateVector[2];
+        newStateVector[1] = stateVector[1] + (2 * h) / 3 * stateVector[3];
+        newStateVector[2] = stateVector[2] + (2 * h) / 3 * fx;
+        newStateVector[3] = stateVector[3] + (2 * h) / 3 * fy;
 
-            incrementBeginning = h * function(x0, y);
-            incrementMidpoint = h * function(x0 + h/2, y + incrementBeginning/2);
+        double newfx = getAccel(true, false, newStateVector);
+        double newfy = getAccel(false, true, newStateVector);
 
-            y += (incrementBeginning + 2 * incrementMidpoint)/6;
-
-            x0 += h;
-        }
-        return y;
-    }
-
-    public void newStateVectorUpdater_RK4(String fx) {
-        if(!atRest(stateVector[0],stateVector[1])) {
-            for(int stateVectorInt=0;stateVectorInt<stateVector.length;stateVectorInt++) {
-                newW_RK4(stateVectorInt);
-            }
-        }
-        currT += h;
-    }
-
-    public void newW_RK4(int stateVectorInt) {
-        double[] new4k = new double[4];
-        for(int k=1;k<5;k++) {
-            new4k[k-1] = kEval(k,stateVector[stateVectorInt]);
-        }
-        stateVector[stateVectorInt] += (new4k[0] + 2*new4k[1] + 2*new4k[2] + new4k[3])/6;
-    }
-
-    public double kEval(int k,double w) {
-        if(k==1) return h * function(currT, w);
-        else if (k==2 || k==3) return h*function(currT + h/2, w + (kEval(k-1, w) / 2));
-        else if (k == 4) return h*function(currT + h, w+kEval(k-1, w));
-        else throw new IllegalArgumentException("Invalid input k");
+        stateVector[0] += 0.25 * h * (stateVector[2] + 3 * newStateVector[2]);
+        stateVector[1] += 0.25 * h * (stateVector[3] + 3 * newStateVector[3]);
+        stateVector[2] += 0.25 * h * (fx + 3 * newfx);
+        stateVector[3] += 0.25 * h * (fy + 3 * newfy);
     }
 
     /**
@@ -494,7 +450,7 @@ public class PhysicsEngine
                 System.out.println(test.stateVector[3]);
             }
             if(test.targetX - test.targetRadius < test.stateVector[0] && test.stateVector[0] < test.targetX + test.targetRadius && test.targetY - test.targetRadius < test.stateVector[1] && test.stateVector[1] < test.targetY + test.targetRadius) break;
-            test.runSimulation(3,0,2);
+            test.runSimulation(3,0,1);
             if(test.stateVector[2] == 0 && test.stateVector[3] == 0)
             {
                 System.out.println("Final step: ");
