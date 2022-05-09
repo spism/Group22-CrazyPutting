@@ -220,12 +220,24 @@ public class PhysicsEngine
                 stateVector[3] = 0;
                 acceleration = 0;
             }
+            else if(function(stateVector[0],stateVector[1]) < 0)
+            {
+                stateVector[2] = 0;
+                stateVector[3] = 0;
+                acceleration = 0;
+            }
             else acceleration = -g * slopeX - kineticCoeff * g * (xSpeed / denominator);
         }
         else if(y && !x)
         {
             if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor)) acceleration = -g * slopeY - kineticCoeff * g * (slopeY / denominator2);
             else if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
+            {
+                stateVector[2] = 0;
+                stateVector[3] = 0;
+                acceleration = 0;
+            }
+            else if(function(stateVector[0],stateVector[1]) < 0)
             {
                 stateVector[2] = 0;
                 stateVector[3] = 0;
@@ -355,10 +367,10 @@ public class PhysicsEngine
 
     public double[] ruleBasedBot(int solver)
     {
-        for(double ySpeed = -targetY * grassKinetic; ySpeed < targetY; ySpeed = ySpeed + targetRadius)
+        for(double ySpeed = -targetY * grassKinetic; ySpeed < targetY; ySpeed = ySpeed + 0.5 * targetRadius)
         {
             System.out.println("Trying new Y speed!");
-            for(double xSpeed = -targetX * grassKinetic; xSpeed < targetX; xSpeed = xSpeed + targetRadius)
+            for(double xSpeed = -targetX * grassKinetic; xSpeed < targetX; xSpeed = xSpeed + 0.5 * targetRadius)
             {
                 System.out.println("Trying new X speed!");
                 stateVector[0] = firstX;
@@ -391,33 +403,17 @@ public class PhysicsEngine
         double YSpeed = (random.nextInt(2) - 1) * random.nextDouble(10);
         double currBest = 0;
         double goalState = targetX * targetX + targetY * targetY;
-        if(inHole(currState[0],currState[1])) return currState;
-        else
+        if(inHole(stateVector[0],stateVector[1])) return currState;
+        while(!inHole(stateVector[0],stateVector[1]))
         {
-            while(XSpeed - prevX < h && YSpeed - prevY < h)
+            while(stateVector[0] != 0 || stateVector[1] != 0)
             {
-                currState[2] += XSpeed;
-                currState[3] += YSpeed;
-                stateVector[0] = 0;
-                stateVector[1] = 0;
-                stateVector[2] = currState[2];
-                stateVector[3] = currState[3];
-                while(stateVector[2] != 0 || stateVector[3] != 0)
-                {
-                    runSimulation(currState[2],currState[3],solver);
-                    if(inWater(stateVector[0],stateVector[1])) break;
-                }
-                double euclideanDistance = stateVector[0] * stateVector[0] + stateVector[1] * stateVector[1];
-                if(inHole(stateVector[0],stateVector[1]))
-                {
-                    return currState;
-                }
-                else if(goalState - euclideanDistance < goalState - currBest)
-                {
-                    currBest = euclideanDistance;
-                    // still need to find function based on which to change speeds
-                }
+                runSimulation(XSpeed,YSpeed,2);
             }
+
+            double euclideanDistance = stateVector[0] * stateVector[0] + stateVector[1] * stateVector[1];
+
+            XSpeed =
         }
         return currState;
     }
@@ -450,7 +446,7 @@ public class PhysicsEngine
                 System.out.println(test.stateVector[3]);
             }
             if(test.targetX - test.targetRadius < test.stateVector[0] && test.stateVector[0] < test.targetX + test.targetRadius && test.targetY - test.targetRadius < test.stateVector[1] && test.stateVector[1] < test.targetY + test.targetRadius) break;
-            test.runSimulation(3,0,1);
+            test.runSimulation(3,0,2);
             if(test.stateVector[2] == 0 && test.stateVector[3] == 0)
             {
                 System.out.println("Final step: ");
