@@ -10,7 +10,6 @@ public class PhysicsEngine
     public double sandX1, sandX2, sandY1, sandY2;
     private double grassKinetic, grassStatic;
     private double sandKinetic, sandStatic;
-    private double currT;
     private String heightProfile;
     private final double h = 0.0001;
     private final double g = 9.81;
@@ -18,7 +17,6 @@ public class PhysicsEngine
     private boolean initSpeedsDefined = false;
     public PhysicsEngine(String filename)
     {
-        currT = 0;
         try
         {
             FileReader fr = new FileReader(filename);
@@ -399,8 +397,8 @@ public class PhysicsEngine
         Random random = new Random(System.currentTimeMillis());
         double prevX = 0;
         double prevY = 0;
-        double XSpeed = (random.nextInt(2) - 1) * random.nextDouble(10);
-        double YSpeed = (random.nextInt(2) - 1) * random.nextDouble(10);
+        double XSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 10;
+        double YSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 10;
         double currBest = 0;
         double goalState = targetX * targetX + targetY * targetY;
         if(inHole(stateVector[0],stateVector[1])) return currState;
@@ -413,7 +411,6 @@ public class PhysicsEngine
 
             double euclideanDistance = stateVector[0] * stateVector[0] + stateVector[1] * stateVector[1];
 
-            XSpeed =
         }
         return currState;
     }
