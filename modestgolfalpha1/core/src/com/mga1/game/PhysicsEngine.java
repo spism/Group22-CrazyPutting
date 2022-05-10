@@ -1,5 +1,6 @@
 package com.mga1.game;
 import java.io.*;
+import java.util.Random;
 import java.util.Stack;
 
 public class PhysicsEngine
@@ -9,15 +10,13 @@ public class PhysicsEngine
     public double sandX1, sandX2, sandY1, sandY2;
     private double grassKinetic, grassStatic;
     private double sandKinetic, sandStatic;
-    private double currT;
     private String heightProfile;
-    private final double h = 0.000001;
+    private final double h = 0.0001;
     private final double g = 9.81;
     public double[] stateVector = new double[4];
     private boolean initSpeedsDefined = false;
     public PhysicsEngine(String filename)
     {
-        currT = 0;
         try
         {
             FileReader fr = new FileReader(filename);
@@ -163,8 +162,8 @@ public class PhysicsEngine
     public double[] updateVectorEuler(double[] stateVector)
     {
         double[] stepVector = new double[4];
-        double xAccel = getAccel(true,false);
-        double yAccel = getAccel(false,true);
+        double xAccel = getAccel(true,false,stateVector);
+        double yAccel = getAccel(false,true,stateVector);
         //System.out.println(secondTermX + " " + secondTermY);
         //System.out.println("x acceleration: " + xAccel + " y acceleration: " + yAccel);
 
@@ -189,14 +188,14 @@ public class PhysicsEngine
      * @param y should be the only true variable if the y acceleration is required
      * @return the x or y acceleration based on the parameters
      */
-    private double getAccel(boolean x, boolean y)
+    private double getAccel(boolean x, boolean y, double[] stateVector)
     {
         double xCoor = stateVector[0];
         double yCoor = stateVector[1];
         double xSpeed = stateVector[2];
         double ySpeed = stateVector[3];
 
-        double limitZero = 0.000000000001;
+        double limitZero = 0.000000000001; // lowest possible number before resulting in larger errors in computations
         double newX = xCoor + limitZero;
         double newY = yCoor + limitZero;
 
@@ -219,11 +218,24 @@ public class PhysicsEngine
                 stateVector[3] = 0;
                 acceleration = 0;
             }
+            else if(function(stateVector[0],stateVector[1]) < 0)
+            {
+                stateVector[2] = 0;
+                stateVector[3] = 0;
+                acceleration = 0;
+            }
             else acceleration = -g * slopeX - kineticCoeff * g * (xSpeed / denominator);
         }
-        else if(y && !x) {
+        else if(y && !x)
+        {
             if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor)) acceleration = -g * slopeY - kineticCoeff * g * (slopeY / denominator2);
             else if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
+            {
+                stateVector[2] = 0;
+                stateVector[3] = 0;
+                acceleration = 0;
+            }
+            else if(function(stateVector[0],stateVector[1]) < 0)
             {
                 stateVector[2] = 0;
                 stateVector[3] = 0;
@@ -268,111 +280,157 @@ public class PhysicsEngine
         }
 
         if(solver == 0) stateVector = updateVectorEuler(stateVector);
-        else if(solver == 1) stateVector = updateVectorRK2(stateVector);
-        else if(solver == 2) stateVector = updateVectorRK4(stateVector);
+        else if(solver == 1) RK2();
+        else if(solver == 2) RK4();
         else throw new IllegalArgumentException("Nonexistent solver!");
     }
 
     /**
      * The Runge-Kutta 2nd order method.
-     * @param w is the current iteration of the variable to be changed
-     * @param a no idea what this is
-     * @return the equation result except for the addition of w
      */
-    public double RK2(double w, double a) // what is a?
+    private void RK2()
     {
-        return h * ((1 - (1 / (2 * a))) * function(currT,w)) + (1 / (2 * a)) * function(currT + a * h,w + a * h * function(currT,w));
-    }
+        double fx = getAccel(true,false,stateVector);
+        double fy = getAccel(false,true,stateVector);
 
-    /**
-     * Updates the state vector once using RK2.
-     * @param stateVector is the current iteration of the state vector
-     * @return the next iteration of the state vector
-     */
-    public double[] updateVectorRK2(double[] stateVector)
-    {
-        for(int i = 0; i < stateVector.length; i++)
-        {
-            stateVector[i] += RK2(stateVector[i],0.5);
-        }
-        currT += h;
-        return stateVector;
-    }
+        double[] newStateVector = new double[4];
 
-    public double rungeKuttaSecondOrder (double x0, double y0, double x)
-    {
-        int n = (int)((x-x0)/h);
-        double y = y0;
-        double incrementBeginning, incrementMidpoint;
-        for (int i = 1; i<= n; i++){
+        newStateVector[0] = stateVector[0] + (2 * h) / 3 * stateVector[2];
+        newStateVector[1] = stateVector[1] + (2 * h) / 3 * stateVector[3];
+        newStateVector[2] = stateVector[2] + (2 * h) / 3 * fx;
+        newStateVector[3] = stateVector[3] + (2 * h) / 3 * fy;
 
-            incrementBeginning = h * function(x0, y);
-            incrementMidpoint = h * function(x0 + h/2, y + incrementBeginning/2);
+        double newfx = getAccel(true, false, newStateVector);
+        double newfy = getAccel(false, true, newStateVector);
 
-            y += (incrementBeginning + 2 * incrementMidpoint)/6;
-
-            x0 += h;
-        }
-        return y;
-    }
-
-    public void newStateVectorUpdater_RK4(String fx) {
-        if(!atRest(stateVector[0],stateVector[1])) {
-            for(int stateVectorInt=0;stateVectorInt<stateVector.length;stateVectorInt++) {
-                newW_RK4(stateVectorInt);
-            }
-        }
-        currT += h;
-    }
-
-    public void newW_RK4(int stateVectorInt) {
-        double[] new4k = new double[4];
-        for(int k=1;k<5;k++) {
-            new4k[k-1] = kEval(k,stateVector[stateVectorInt]);
-        }
-        stateVector[stateVectorInt] += (new4k[0] + 2*new4k[1] + 2*new4k[2] + new4k[3])/6;
-    }
-
-    public double kEval(int k,double w) {
-        if(k==1) return h * function(currT, w);
-        else if (k==2 || k==3) return h*function(currT + h/2, w + (kEval(k-1, w) / 2));
-        else if (k == 4) return h*function(currT + h, w+kEval(k-1, w));
-        else throw new IllegalArgumentException("Invalid input k");
-    }
-
-    /**
-     * Increments the state vector once using RK4.
-     * @param stateVector is the current state vector
-     * @return the next iteration of the state vector
-     */
-    public double[] updateVectorRK4(double[] stateVector)
-    {
-        for(int i = 0; i < stateVector.length; i++)
-        {
-            stateVector[i] = RK4(stateVector[i]);
-        }
-        currT += h;
-        return stateVector;
+        stateVector[0] += 0.25 * h * (stateVector[2] + 3 * newStateVector[2]);
+        stateVector[1] += 0.25 * h * (stateVector[3] + 3 * newStateVector[3]);
+        stateVector[2] += 0.25 * h * (fx + 3 * newfx);
+        stateVector[3] += 0.25 * h * (fy + 3 * newfy);
     }
 
     /**
      * This is the Runge-Kutta 4th order method.  It is used to handle the bulk of the physics for the game.
-     * @param w is the current iteration of the variable
-     * @return the result of the equation except for the addition of the w variable
      */
-    public double RK4(double w)
+    private void RK4()
     {
-        double[] k = new double[4];
-        k[0] = h * function(currT, w);
-        k[1] = h * function(currT + h/2,w + k[0]);
-        k[2] = h * function(currT + h/2,w + k[1]);
-        k[3] = h * function(currT + h,w + k[2]);
-        return (k[0] + 2 * k[1] + 2 * k[2] + k[3])/6;
+        double[][] k = new double[4][4];
+
+        k[0][0] = h * stateVector[2];
+        k[1][0] = h * stateVector[3];
+        k[2][0] = h * getAccel(true,false,stateVector);
+        k[3][0] = h * getAccel(false,true,stateVector);
+
+        double[] newStateVector = new double[4];
+        for(int i = 0; i < 4; i++)
+        {
+            newStateVector[i] = stateVector[i] + 0.5 * k[i][0];
+        }
+
+        k[0][1] = h * newStateVector[2];
+        k[1][1] = h * newStateVector[3];
+        k[2][1] = h * getAccel(true,false,newStateVector);
+        k[3][1] = h * getAccel(false,true,newStateVector);
+
+        for(int i = 0; i < 4; i++)
+        {
+            newStateVector[i] = stateVector[i] + 0.5 * k[i][1]; // maybe newStateVector[i] + 0.5 * k[i][1]?
+        }
+
+        k[0][2] = h * newStateVector[2];
+        k[1][2] = h * newStateVector[3];
+        k[2][2] = h * getAccel(true,false,newStateVector);
+        k[3][2] = h * getAccel(false,true,newStateVector);
+
+        for(int i = 0; i < 4; i++)
+        {
+            newStateVector[i] = stateVector[i] + k[i][2];
+        }
+
+        k[0][3] = h * newStateVector[2];
+        k[1][3] = h * newStateVector[3];
+        k[2][3] = h * getAccel(true,false,newStateVector);
+        k[3][3] = h * getAccel(false,true,newStateVector);
+
+        for(int i = 0; i < 4; i++)
+        {
+            //System.out.println(stateVector[i] + " + " + (k[i][0] + 2 * k[i][1] + 2 * k[i][2] + k[i][3]) / 6);
+            /*for(int j = 0; j < 4; j++)
+            {
+                System.out.println(j + " " + k[i][j]);
+            }*/
+            stateVector[i] += (k[i][0] + 2 * k[i][1] + 2 * k[i][2] + k[i][3]) / 6;
+        }
+    }
+
+    public double[] ruleBasedBot(int solver)
+    {
+        for(double ySpeed = -targetY * grassKinetic; ySpeed < targetY; ySpeed = ySpeed + 0.5 * targetRadius)
+        {
+            System.out.println("Trying new Y speed!");
+            for(double xSpeed = -targetX * grassKinetic; xSpeed < targetX; xSpeed = xSpeed + 0.5 * targetRadius)
+            {
+                System.out.println("Trying new X speed!");
+                stateVector[0] = firstX;
+                stateVector[1] = firstY;
+                stateVector[2] = xSpeed;
+                stateVector[3] = ySpeed;
+                while(true)
+                {
+                    runSimulation(xSpeed,ySpeed,solver);
+                    if(inHole(stateVector[0],stateVector[1]))
+                    {
+                        return new double[]{xSpeed,ySpeed};
+                    }
+                    if(inWater(stateVector[0],stateVector[1])) break;
+                    if(stateVector[2] == 0 && stateVector[3] == 0) break;
+                }
+            }
+        }
+        return null;
+    }
+
+    public double[] hillClimbing(int solver)
+    {
+        boolean solutionFound = false;
+        double[] currState = new double[4];
+        Random random = new Random(System.currentTimeMillis());
+        double prevX = 0;
+        double prevY = 0;
+        double XSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 10;
+        double YSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 10;
+        double currBest = 0;
+        double goalState = targetX * targetX + targetY * targetY;
+        if(inHole(stateVector[0],stateVector[1])) return currState;
+        while(!inHole(stateVector[0],stateVector[1]))
+        {
+            while(stateVector[0] != 0 || stateVector[1] != 0)
+            {
+                runSimulation(XSpeed,YSpeed,2);
+            }
+
+            double euclideanDistance = stateVector[0] * stateVector[0] + stateVector[1] * stateVector[1];
+
+        }
+        return currState;
+    }
+
+    private boolean inHole(double x, double y)
+    {
+        return targetX - targetRadius < x && x < targetX + targetRadius && targetY - targetRadius < y && y < targetY + targetRadius;
+    }
+
+    private boolean inWater(double x, double y)
+    {
+        return function(x,y) < 0;
     }
 
     public static void main(String[] args)
     {
         PhysicsEngine test = new PhysicsEngine("src\\example_inputfile.txt");
+        /*double[] speeds = test.ruleBasedBot(0);
+        if(speeds != null) System.out.println("Found speeds!");
+        else System.out.println("No speeds found!");*/
         int count = 0;
         while(true)
         {
@@ -382,17 +440,17 @@ public class PhysicsEngine
                 System.out.println(test.stateVector[0]);
                 System.out.println(test.stateVector[1]);
                 System.out.println(test.stateVector[2]);
-                System.out.println(test.stateVector[1]);
+                System.out.println(test.stateVector[3]);
             }
             if(test.targetX - test.targetRadius < test.stateVector[0] && test.stateVector[0] < test.targetX + test.targetRadius && test.targetY - test.targetRadius < test.stateVector[1] && test.stateVector[1] < test.targetY + test.targetRadius) break;
-            test.runSimulation(2,0,1);
+            test.runSimulation(3,0,2);
             if(test.stateVector[2] == 0 && test.stateVector[3] == 0)
             {
                 System.out.println("Final step: ");
                 System.out.println(test.stateVector[0]);
                 System.out.println(test.stateVector[1]);
                 System.out.println(test.stateVector[2]);
-                System.out.println(test.stateVector[1]);
+                System.out.println(test.stateVector[3]);
                 break;
             }
             count++;
