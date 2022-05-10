@@ -392,25 +392,39 @@ public class PhysicsEngine
 
     public double[] hillClimbing(int solver)
     {
-        boolean solutionFound = false;
         double[] currState = new double[4];
         Random random = new Random(System.currentTimeMillis());
-        double prevX = 0;
-        double prevY = 0;
         double XSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 10;
         double YSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 10;
-        double currBest = 0;
-        double goalState = targetX * targetX + targetY * targetY;
+        double currBest = Integer.MAX_VALUE;
+        double[] goalState = {targetX, targetY};
         if(inHole(stateVector[0],stateVector[1])) return currState;
         while(!inHole(stateVector[0],stateVector[1]))
         {
-            while(stateVector[0] != 0 || stateVector[1] != 0)
+            stateVector[0] = 0;
+            stateVector[1] = 0;
+            while(stateVector[2] != 0 || stateVector[3] != 0)
             {
                 runSimulation(XSpeed,YSpeed,2);
             }
 
-            double euclideanDistance = stateVector[0] * stateVector[0] + stateVector[1] * stateVector[1];
+            double[] tempVector = new double[2];
+            for(int i = 0; i < 2; i++)
+            {
+                tempVector[i] = goalState[i] - stateVector[i];
+            }
 
+            double euclideanDistance = Math.sqrt(tempVector[0] * tempVector[0] + tempVector[1] * tempVector[1]);
+            if(euclideanDistance < currBest)
+            {
+                currBest = euclideanDistance;
+                XSpeed = XSpeed * euclideanDistance;
+                YSpeed = YSpeed * euclideanDistance;
+            }
+            else
+            {
+                // random x and y speed
+            }
         }
         return currState;
     }
