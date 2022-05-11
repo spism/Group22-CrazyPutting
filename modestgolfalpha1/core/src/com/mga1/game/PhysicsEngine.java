@@ -243,7 +243,36 @@ public class PhysicsEngine
             }
             else acceleration = -g * slopeY - kineticCoeff * g * (ySpeed / denominator);
         }
+
+        if (borderCollision(xCoor, yCoor) == 1) {
+            stateVector[0] = 0;
+            stateVector[3] = -stateVector[3];
+        } else if (borderCollision(xCoor, yCoor) == 2) {
+            stateVector[1] = 0;
+            stateVector[2] = -stateVector[2];
+        } else if (borderCollision(xCoor, yCoor) == 3) {
+            stateVector[0] = 128;
+            stateVector[3] = -stateVector[3];
+        } else if (borderCollision(xCoor, yCoor) == 4) {
+            stateVector[1] = 128;
+            stateVector[2] = -stateVector[2];
+        } 
         return acceleration;
+    }
+
+    /**
+     * Checks if the ball is outside of the field
+     * @param x is the current x coordinate
+     * @param y is the current y coordinate
+     * @return if the ball is ouside of a border, which one?
+     */
+    public int borderCollision(double x, double y){
+        int borderCollisionType = 0;
+        if (x < 0) borderCollisionType = 1;
+        else if (y < 0) borderCollisionType = 2;
+        else if (x > 128) borderCollisionType = 3;
+        else if (y > 128) borderCollisionType = 4;
+        return borderCollisionType;
     }
 
     /**
