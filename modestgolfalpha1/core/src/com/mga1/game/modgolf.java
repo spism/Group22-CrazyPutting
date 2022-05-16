@@ -116,7 +116,7 @@ public class modgolf extends Game{
 	@Override
 	public void create () {
 
-		Gdx.graphics.setContinuousRendering(false);
+	
 
 		Material grass2 = new Material();
 		grass2.set(new TextureAttribute(TextureAttribute.Diffuse, new Texture(Gdx.files.internal("modestgolfalpha1\\Textures\\grass texture.png"))));
@@ -138,14 +138,14 @@ public class modgolf extends Game{
 		sky = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("modestgolfalpha1\\models\\simplesky.g3dj"));
 		putter = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("modestgolfalpha1\\models\\putterfix.g3dj"));
 
-		ModelInstance penaltywater = new ModelInstance(waterp,64, -0.8f, 192);
+		ModelInstance penaltywater = new ModelInstance(waterp,64, -0.7f, 192);
 		ModelInstance penaltygrass = new ModelInstance(grassp,128, -8, 128);
 		golfbol = new ModelInstance(golfball, 0, 0, 0);
 		ModelInstance skybox = new ModelInstance(sky);
 		ModelInstance ground = new ModelInstance(testfloor,0,0,256);
 		ModelInstance skybox2 = new ModelInstance(skyfix);
-		ModelInstance flag = new ModelInstance(flagpole, (float)phys.targetX+64,(float)(phys.function(phys.targetX,phys.targetY))-8,(float)(phys.targetY)+192);
-		putt = new ModelInstance(putter,5,1,0);
+		ModelInstance flag = new ModelInstance(flagpole, (float)phys.targetX+64,(float)(phys.function(phys.targetX,phys.targetY))-4,(float)(phys.targetY)+190);
+		putt = new ModelInstance(putter,5,0,0);
 		ModelInstance ball = new ModelInstance(skyball,0,0,0);
 
 
@@ -167,7 +167,7 @@ public class modgolf extends Game{
 
 
 		cam = new PerspectiveCamera(70, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-		cam.position.set(-64f, 50f, 256f);
+		cam.position.set(0f, 50f, 256f);
 		cam.lookAt(0f, 0f, -256f);
 		cam.near = 1f;
 		cam.far = 999999f;
@@ -180,6 +180,7 @@ public class modgolf extends Game{
 
 	@Override
 	public void render () {
+		
 		camController.update();
 
 		Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -188,17 +189,21 @@ public class modgolf extends Game{
 		modelBatch.begin(cam);
 		modelBatch.render(instances, environment);
 
+		moveBall((float) phys.stateVector[0], (float) phys.stateVector[1]);
+		cam.lookAt(golfbol.transform.getTranslation(new Vector3()));
+					cam.update();
 
+	
 
 
 				if (Gdx.input.isKeyPressed(Keys.R)) {
-					cam.position.set(-64f, 50f, 256f);
+					cam.position.set(65f, 75f, 200f);
 					cam.lookAt(golfbol.transform.getTranslation(new Vector3()));
 					cam.update();
 					System.out.println("XPOS: " + phys.stateVector[0] + " YPOS: " + phys.stateVector[1]);
 					System.out.println("Height: " + phys.function(phys.stateVector[0], phys.stateVector[1]));
 					int i = 0;
-					while(i < 100){
+					while(i < 1000){
 					phys.runSimulation(3, 0, 2);
 					i = i + 1;
 					}
