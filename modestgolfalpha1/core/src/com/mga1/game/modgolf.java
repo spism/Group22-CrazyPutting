@@ -177,7 +177,7 @@ public class modgolf extends Game{
 		Gdx.input.setInputProcessor(camController);
 	}
 
-
+// GUI models are not correct to scale for what the input file says just look at the command terminal not GUI 
 	@Override
 	public void render () {
 		
@@ -208,12 +208,13 @@ public class modgolf extends Game{
 					i = i + 1;
 					}
 					moveBall((float) phys.stateVector[0], (float) phys.stateVector[1]);
+					System.out.println("Distance to hole " + (Math.pow((phys.stateVector[0]-phys.targetX),2)+Math.pow((phys.stateVector[1]-phys.targetY), 2)));
 
-					if (phys.targetX - phys.targetRadius < phys.stateVector[0] && phys.stateVector[0] < phys.targetX + phys.targetRadius && phys.targetY - phys.targetRadius < phys.stateVector[1] && phys.stateVector[1] < phys.targetY + phys.targetRadius) {
+					if ((Math.pow((phys.stateVector[0]-phys.targetX),2)+Math.pow((phys.stateVector[1]-phys.targetY), 2)<= Math.pow(phys.targetRadius, 2))) {
 						System.out.println("You Win!");
 					}
 					if (phys.stateVector[2] == 0 && phys.stateVector[3] == 0) {
-						System.out.println("You Suck!");
+						System.out.println("You lose!");
 					}
 
 				}
