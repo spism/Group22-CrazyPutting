@@ -11,7 +11,7 @@ public class PhysicsEngine
     private double grassKinetic, grassStatic;
     private double sandKinetic, sandStatic;
     private String heightProfile;
-    private final double h = 0.0001;
+    private final double h = 0.01;
     private final double g = 9.81;
     public double[] stateVector = new double[4];
     private boolean initSpeedsDefined = false;
@@ -243,36 +243,7 @@ public class PhysicsEngine
             }
             else acceleration = -g * slopeY - kineticCoeff * g * (ySpeed / denominator);
         }
-
-        if (borderCollision(xCoor, yCoor) == 1) {
-            stateVector[0] = 0;
-            stateVector[3] = -stateVector[3];
-        } else if (borderCollision(xCoor, yCoor) == 2) {
-            stateVector[1] = 0;
-            stateVector[2] = -stateVector[2];
-        } else if (borderCollision(xCoor, yCoor) == 3) {
-            stateVector[0] = 128;
-            stateVector[3] = -stateVector[3];
-        } else if (borderCollision(xCoor, yCoor) == 4) {
-            stateVector[1] = 128;
-            stateVector[2] = -stateVector[2];
-        } 
         return acceleration;
-    }
-
-    /**
-     * Checks if the ball is outside of the field
-     * @param x is the current x coordinate
-     * @param y is the current y coordinate
-     * @return if the ball is ouside of a border, which one?
-     */
-    public int borderCollision(double x, double y){
-        int borderCollisionType = 0;
-        if (x < 0) borderCollisionType = 1;
-        else if (y < 0) borderCollisionType = 2;
-        else if (x > 128) borderCollisionType = 3;
-        else if (y > 128) borderCollisionType = 4;
-        return borderCollisionType;
     }
 
     /**
@@ -394,25 +365,26 @@ public class PhysicsEngine
 
     public double[] ruleBasedBot(int solver)
     {
-        for(double ySpeed = -targetY * grassKinetic; ySpeed < targetY; ySpeed = ySpeed + 0.5 * targetRadius)
+        int iterationNumber = 0;
+        for(double ySpeed = -5 * grassKinetic; ySpeed < targetY; ySpeed = ySpeed + 0.5 * targetRadius)
         {
-            System.out.println("Trying new Y speed!");
-            for(double xSpeed = -targetX * grassKinetic; xSpeed < targetX; xSpeed = xSpeed + 0.5 * targetRadius)
+            System.out.println("Trying new Y speed!!!!!!!!!!!");
+            for(double xSpeed = -5 * grassKinetic; xSpeed < targetX; xSpeed = xSpeed + 0.5 * targetRadius)
             {
+                iterationNumber++;
                 System.out.println("Trying new X speed!");
                 stateVector[0] = firstX;
                 stateVector[1] = firstY;
                 stateVector[2] = xSpeed;
                 stateVector[3] = ySpeed;
-                while(true)
+                while(stateVector[2] != 0 || stateVector[3] != 0)
                 {
                     runSimulation(xSpeed,ySpeed,solver);
                     if(inHole(stateVector[0],stateVector[1]))
                     {
+                        System.out.println("Finding the speed took " + iterationNumber + " iterations");
                         return new double[]{xSpeed,ySpeed};
                     }
-                    if(inWater(stateVector[0],stateVector[1])) break;
-                    if(stateVector[2] == 0 && stateVector[3] == 0) break;
                 }
             }
         }
@@ -421,46 +393,137 @@ public class PhysicsEngine
 
     public double[] hillClimbing(int solver)
     {
-        double[] currState = new double[4];
+        double[] finalSpeeds = new double[2];
         Random random = new Random(System.currentTimeMillis());
-        double XSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 10;
-        double YSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 10;
+        double XSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 5;
+        double YSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 5;
         double currBest = Integer.MAX_VALUE;
         double[] goalState = {targetX, targetY};
-        if(inHole(stateVector[0],stateVector[1])) return currState;
-        while(!inHole(stateVector[0],stateVector[1]))
-        {
-            stateVector[0] = 0;
-            stateVector[1] = 0;
-            while(stateVector[2] != 0 || stateVector[3] != 0)
-            {
-                runSimulation(XSpeed,YSpeed,2);
-            }
+        double[] bestPos = new double[2];
+        int iterationNumber = 0;
 
-            double[] tempVector = new double[2];
+        //used to find the current speed using random values
+        stateVector[0] = 0;
+        stateVector[1] = 0;
+        while(stateVector[2] != 0 || stateVector[3] != 0)
+        {
+            runSimulation(XSpeed,YSpeed,2);
+        }
+        bestPos[0] = stateVector[0];
+        bestPos[1] = stateVector[1];
+
+        if(inHole(bestPos[0],bestPos[1]))
+        {
+            finalSpeeds[0] = XSpeed;
+            finalSpeeds[1] = YSpeed;
+            return finalSpeeds;
+        }
+        while(!inHole(bestPos[0],bestPos[1]))
+        {
+            iterationNumber++;
+            double[] rightScore = new double[2];
+            double[] leftScore = new double[2];
+            double[] rightPos = new double[2];
+            double[] leftPos = new double[2];
             for(int i = 0; i < 2; i++)
             {
-                tempVector[i] = goalState[i] - stateVector[i];
+                rightScore[i] = goalState[i] - stateVector[i];
             }
+            double euclideanDistance = Math.sqrt(rightScore[0] * rightScore[0] + rightScore[1] * rightScore[1]);
+            //left and right speeds (the current speed is change by a bit in both directions) are evaluated and the better one is chosen
+            double[] rightSpeed = {XSpeed + targetRadius * euclideanDistance, YSpeed + targetRadius * euclideanDistance};
+            double[] leftSpeed = {XSpeed - targetRadius * euclideanDistance, YSpeed - targetRadius * euclideanDistance};
 
-            double euclideanDistance = Math.sqrt(tempVector[0] * tempVector[0] + tempVector[1] * tempVector[1]);
-            if(euclideanDistance < currBest)
+            //evaluating right shot
+            stateVector[0] = 0;
+            stateVector[1] = 0;
+            stateVector[2] = rightSpeed[0];
+            stateVector[3] = rightSpeed[1];
+            while(stateVector[2] != 0 || stateVector[3] != 0)
             {
-                currBest = euclideanDistance;
-                XSpeed = XSpeed * euclideanDistance;
-                YSpeed = YSpeed * euclideanDistance;
+                if(inHole(stateVector[0],stateVector[1]))
+                {
+                    System.out.println("Finding the speeds took " + iterationNumber + " iterations");
+                    return new double[]{rightSpeed[0],rightSpeed[1]};
+                }
+                runSimulation(rightSpeed[0],rightSpeed[1],2);
+            }
+            rightPos[0] = stateVector[0];
+            rightPos[1] = stateVector[1];
+            //System.out.println("Right position X is: " + rightPos[0]);
+            //System.out.println("Right position Y is: " + rightPos[1]);
+            for(int i = 0; i < 2; i++)
+            {
+                rightScore[i] = goalState[i] - stateVector[i];
+            }
+            double rightEuclidean = Math.sqrt(rightScore[0] * rightScore[0] + rightScore[1] * rightScore[1]);
+
+            //evaluating left shot
+            stateVector[0] = 0;
+            stateVector[1] = 0;
+            stateVector[2] = leftSpeed[0];
+            stateVector[3] = leftSpeed[1];
+            while(stateVector[2] != 0 || stateVector[3] != 0)
+            {
+                if(inHole(stateVector[0],stateVector[1]))
+                {
+                    System.out.println("Finding the speeds took " + iterationNumber + " iterations");
+                    return new double[]{leftSpeed[0],leftSpeed[1]};
+                }
+                runSimulation(leftSpeed[0],leftSpeed[1],2);
+            }
+            leftPos[0] = stateVector[0];
+            leftPos[1] = stateVector[1];
+            //System.out.println("Left position X is: " + leftPos[0]);
+            //System.out.println("Left position Y is: " + leftPos[1]);
+            for(int i = 0; i < 2; i++)
+            {
+                leftScore[i] = goalState[i] - stateVector[i];
+            }
+            double leftEuclidean = Math.sqrt(leftScore[0] * leftScore[0] + leftScore[1] * leftScore[1]);
+
+            if(rightEuclidean < currBest)
+            {
+                currBest = rightEuclidean;
+                XSpeed = rightSpeed[0];
+                YSpeed = rightSpeed[1];
+                bestPos[0] = rightPos[0];
+                bestPos[1] = rightPos[1];
+            }
+            else if(leftEuclidean < currBest)
+            {
+                currBest = leftEuclidean;
+                XSpeed = leftSpeed[0];
+                YSpeed = leftSpeed[1];
+                bestPos[0] = leftPos[0];
+                bestPos[1] = leftPos[1];
+            }
+            else if(rightEuclidean < leftEuclidean)
+            {
+                currBest = rightEuclidean;
+                XSpeed = rightSpeed[0];
+                YSpeed = rightSpeed[1];
+                bestPos[0] = rightPos[0];
+                bestPos[1] = rightPos[1];
             }
             else
             {
-                // random x and y speed
+                currBest = leftEuclidean;
+                XSpeed = leftSpeed[0];
+                YSpeed = leftSpeed[1];
+                bestPos[0] = leftPos[0];
+                bestPos[1] = leftPos[1];
             }
+            System.out.println("Current best is: " + bestPos[0]);
+            System.out.println("Current best is " + bestPos[1]);
         }
-        return currState;
+        System.out.println("Finding the speeds took " + iterationNumber + " iterations");
+        return finalSpeeds;
     }
 
     private boolean inHole(double x, double y)
     {
-        return targetX - targetRadius < x && x < targetX + targetRadius && targetY - targetRadius < y && y < targetY + targetRadius;
+        return (Math.pow(x - targetX,2) + Math.pow(y - targetY,2)) <= Math.pow(targetRadius,2);
     }
 
     private boolean inWater(double x, double y)
@@ -471,10 +534,18 @@ public class PhysicsEngine
     public static void main(String[] args)
     {
         PhysicsEngine test = new PhysicsEngine("src\\example_inputfile.txt");
-        /*double[] speeds = test.ruleBasedBot(0);
-        if(speeds != null) System.out.println("Found speeds!");
-        else System.out.println("No speeds found!");*/
-        int count = 0;
+        double[] speeds = test.ruleBasedBot(2);
+        if(speeds != null)
+        {
+            System.out.println("Found speeds!");
+            System.out.println(speeds[0]);
+            System.out.println(speeds[1]);
+        }
+        else System.out.println("No speeds found!");
+        double[] speedsHillClimbing = test.hillClimbing(2);
+        System.out.println(speedsHillClimbing[0]);
+        System.out.println(speedsHillClimbing[1]);
+        /*int count = 0;
         while(true)
         {
             if(count % 1000000 == 0)
@@ -497,6 +568,6 @@ public class PhysicsEngine
                 break;
             }
             count++;
-        }
+        }*/
     }
 }
