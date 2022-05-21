@@ -403,19 +403,8 @@ public class PhysicsEngine
         int iterationNumber = 0;
 
         //used to find the current speed using random values
-        stateVector[0] = 0;
-        stateVector[1] = 0;
-        while(stateVector[2] != 0 || stateVector[3] != 0)
-        {
-            runSimulation(XSpeed,YSpeed,2);
-        }
-        bestPos[0] = stateVector[0];
-        bestPos[1] = stateVector[1];
-
         if(inHole(bestPos[0],bestPos[1]))
         {
-            finalSpeeds[0] = XSpeed;
-            finalSpeeds[1] = YSpeed;
             return finalSpeeds;
         }
         while(!inHole(bestPos[0],bestPos[1]))
@@ -429,24 +418,16 @@ public class PhysicsEngine
             {
                 rightScore[i] = goalState[i] - stateVector[i];
             }
-            double euclideanDistance = Math.sqrt(rightScore[0] * rightScore[0] + rightScore[1] * rightScore[1]);
+            double euclideanDistance = calculateEuclidean(bestPos[0],bestPos[1]);
             //left and right speeds (the current speed is change by a bit in both directions) are evaluated and the better one is chosen
             double[] rightSpeed = {XSpeed + targetRadius * euclideanDistance, YSpeed + targetRadius * euclideanDistance};
             double[] leftSpeed = {XSpeed - targetRadius * euclideanDistance, YSpeed - targetRadius * euclideanDistance};
 
             //evaluating right shot
-            stateVector[0] = 0;
-            stateVector[1] = 0;
-            stateVector[2] = rightSpeed[0];
-            stateVector[3] = rightSpeed[1];
-            while(stateVector[2] != 0 || stateVector[3] != 0)
+            if(takeShot(rightSpeed) != null)
             {
-                if(inHole(stateVector[0],stateVector[1]))
-                {
-                    System.out.println("Finding the speeds took " + iterationNumber + " iterations");
-                    return new double[]{rightSpeed[0],rightSpeed[1]};
-                }
-                runSimulation(rightSpeed[0],rightSpeed[1],2);
+                System.out.println("Finding the speeds took " + iterationNumber + " iterations");
+                return rightSpeed;
             }
             rightPos[0] = stateVector[0];
             rightPos[1] = stateVector[1];
@@ -456,21 +437,13 @@ public class PhysicsEngine
             {
                 rightScore[i] = goalState[i] - stateVector[i];
             }
-            double rightEuclidean = Math.sqrt(rightScore[0] * rightScore[0] + rightScore[1] * rightScore[1]);
+            double rightEuclidean = calculateEuclidean(rightScore[0],rightScore[1]);
 
             //evaluating left shot
-            stateVector[0] = 0;
-            stateVector[1] = 0;
-            stateVector[2] = leftSpeed[0];
-            stateVector[3] = leftSpeed[1];
-            while(stateVector[2] != 0 || stateVector[3] != 0)
+            if(takeShot(leftSpeed) != null)
             {
-                if(inHole(stateVector[0],stateVector[1]))
-                {
-                    System.out.println("Finding the speeds took " + iterationNumber + " iterations");
-                    return new double[]{leftSpeed[0],leftSpeed[1]};
-                }
-                runSimulation(leftSpeed[0],leftSpeed[1],2);
+                System.out.println("Finding the speeds took " + iterationNumber + " iterations");
+                return leftSpeed;
             }
             leftPos[0] = stateVector[0];
             leftPos[1] = stateVector[1];
@@ -480,7 +453,7 @@ public class PhysicsEngine
             {
                 leftScore[i] = goalState[i] - stateVector[i];
             }
-            double leftEuclidean = Math.sqrt(leftScore[0] * leftScore[0] + leftScore[1] * leftScore[1]);
+            double leftEuclidean = calculateEuclidean(leftScore[0],leftScore[1]);
 
             if(rightEuclidean < currBest)
             {
@@ -521,6 +494,28 @@ public class PhysicsEngine
         return finalSpeeds;
     }
 
+    private double[] takeShot(double[] speed)
+    {
+        stateVector[0] = firstX;
+        stateVector[1] = firstY;
+        stateVector[2] = speed[0];
+        stateVector[3] = speed[1];
+        while(stateVector[2] != 0 || stateVector[3] != 0)
+        {
+            if(inHole(stateVector[0],stateVector[1]))
+            {
+                return new double[]{speed[0],speed[1]};
+            }
+            runSimulation(speed[0],speed[1],2);
+        }
+        return null;
+    }
+
+    private double calculateEuclidean(double x, double y)
+    {
+        return Math.sqrt(x * x + y * y);
+    }
+
     private boolean inHole(double x, double y)
     {
         return (Math.pow(x - targetX,2) + Math.pow(y - targetY,2)) <= Math.pow(targetRadius,2);
@@ -542,9 +537,9 @@ public class PhysicsEngine
             System.out.println(speeds[1]);
         }
         else System.out.println("No speeds found!");
-        double[] speedsHillClimbing = test.hillClimbing(2);
+        /*double[] speedsHillClimbing = test.hillClimbing(2);
         System.out.println(speedsHillClimbing[0]);
-        System.out.println(speedsHillClimbing[1]);
+        System.out.println(speedsHillClimbing[1]);*/
         /*int count = 0;
         while(true)
         {
