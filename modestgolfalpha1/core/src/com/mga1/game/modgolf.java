@@ -93,13 +93,24 @@ public class modgolf extends Game{
 		for(int x = 0; x < divisions -1;  x++){
 			for(int y = 0; y < divisions -1; y++) {
 
-				VertexInfo v00 = new VertexInfo().set(new Vector3((x * (view)), (float)phys.function(x,y), y * -view), null, null, new Vector2(0,0));
+				VertexInfo v00 = new VertexInfo().set(new Vector3((x * (view)-100), (float)phys.function(x* (view)-100,y* (view)-100), y * -view+100), null, null, new Vector2(0,0));
 
-				VertexInfo v10 = new VertexInfo().set(new Vector3((x+1) * view, (float)phys.function(x+1,y), y * -view), null, null, new Vector2(1,0));
+VertexInfo v10 = new VertexInfo().set(new Vector3((x+1) * view-100, (float)phys.function((x+1)* (view)-100,y* (view)-100), y * -view+100), null, null, new Vector2(1,0));
 
-				VertexInfo v11 = new VertexInfo().set(new Vector3((x+1) * view, (float)phys.function(x+1,y+1), (y+1) * -view), null, null, new Vector2(1,1));
+VertexInfo v11 = new VertexInfo().set(new Vector3((x+1) * view-100, (float)phys.function((x+1)* (view)-100,(y+1)* (view)-100), (y+1) * -view+100), null, null, new Vector2(1,1));
 
-				VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view)), (float)phys.function(x,y+1), (y+1) * -view), null, null, new Vector2(0,1));
+VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view))-100, (float)phys.function(x* (view)-100,(y+1)* (view)-100), (y+1) * -view+100), null, null, new Vector2(0,1));
+
+
+				
+
+			//	VertexInfo v00 = new VertexInfo().set(new Vector3((x * (view)), (float)phys.function(x,y), y * -view), null, null, new Vector2(0,0));
+
+			//	VertexInfo v10 = new VertexInfo().set(new Vector3((x+1) * view, (float)phys.function(x+1,y), y * -view), null, null, new Vector2(1,0));
+
+			//	VertexInfo v11 = new VertexInfo().set(new Vector3((x+1) * view, (float)phys.function(x+1,y+1), (y+1) * -view), null, null, new Vector2(1,1));
+
+			//	VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view)), (float)phys.function(x,y+1), (y+1) * -view), null, null, new Vector2(0,1));
 
 
 				part.rect(v00, v10, v11, v01);
@@ -142,7 +153,7 @@ public class modgolf extends Game{
 		ModelInstance penaltygrass = new ModelInstance(grassp,128, -8, 128);
 		golfbol = new ModelInstance(golfball, 0, 0, 0);
 		ModelInstance skybox = new ModelInstance(sky);
-		ModelInstance ground = new ModelInstance(testfloor,0,0,256);
+		ModelInstance ground = new ModelInstance(testfloor,65,0,193);	
 		ModelInstance skybox2 = new ModelInstance(skyfix);
 		ModelInstance flag = new ModelInstance(flagpole, (float)phys.targetX+64,(float)(phys.function(phys.targetX,phys.targetY))-4,(float)(phys.targetY)+190);
 		putt = new ModelInstance(putter,5,0,0);
