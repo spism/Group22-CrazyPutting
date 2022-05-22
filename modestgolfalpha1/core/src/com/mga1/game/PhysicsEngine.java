@@ -211,39 +211,65 @@ public class PhysicsEngine
 
         if(x && !y)
         {
-            if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor)) acceleration = -g * slopeX - kineticCoeff * g * (slopeX / denominator2);
-            else if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
+            if(minimumSpeed(pythagoreanSpeed) && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor))
+            {
+                acceleration = calcAccel(slopeX,kineticCoeff,slopeX,denominator2);
+            }
+            else if(inPit(pythagoreanSpeed,slopeX,slopeY))
             {
                 stateVector[2] = 0;
                 stateVector[3] = 0;
                 acceleration = 0;
             }
-            else if(function(stateVector[0],stateVector[1]) < 0)
+            else if(Math.abs(pythagoreanSpeed) < 0.01 && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
             {
                 stateVector[2] = 0;
                 stateVector[3] = 0;
                 acceleration = 0;
             }
-            else acceleration = -g * slopeX - kineticCoeff * g * (xSpeed / denominator);
+            else if(inWater(stateVector[0],stateVector[1]))
+            {
+                stateVector[2] = 0;
+                stateVector[3] = 0;
+                acceleration = 0;
+            }
+            else
+            {
+                acceleration = calcAccel(slopeX,kineticCoeff,xSpeed,denominator);
+            }
         }
         else if(y && !x)
         {
-            if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor)) acceleration = -g * slopeY - kineticCoeff * g * (slopeY / denominator2);
-            else if(Math.abs(pythagoreanSpeed) < h && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
+            if(minimumSpeed(pythagoreanSpeed) && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor))
+            {
+                acceleration = calcAccel(slopeY,kineticCoeff,slopeY,denominator2);
+            }
+            else if(inPit(pythagoreanSpeed,slopeX,slopeY))
             {
                 stateVector[2] = 0;
                 stateVector[3] = 0;
                 acceleration = 0;
             }
-            else if(function(stateVector[0],stateVector[1]) < 0)
+            else if(Math.abs(pythagoreanSpeed) < 0.01 && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
             {
                 stateVector[2] = 0;
                 stateVector[3] = 0;
                 acceleration = 0;
             }
-            else acceleration = -g * slopeY - kineticCoeff * g * (ySpeed / denominator);
+            else if(inWater(stateVector[0],stateVector[1]))
+            {
+                stateVector[2] = 0;
+                stateVector[3] = 0;
+                acceleration = 0;
+            }
+            else acceleration = calcAccel(slopeY,kineticCoeff,ySpeed,denominator);
         }
         return acceleration;
+    }
+
+    private boolean inPit(double speed, double slopeX, double slopeY)
+    {
+        return Math.abs(speed) < 0.01 && slopeX == 0 & slopeY == 0;
     }
 
     /**
@@ -260,6 +286,16 @@ public class PhysicsEngine
         double derivativeY = (Math.abs(function(x,y) - function(x,y + limitZero))) / limitZero;
         //System.out.println(derivativeX + " " + derivativeY);
         return staticCoeff > Math.sqrt(derivativeX * derivativeX + derivativeY * derivativeY);
+    }
+
+    public double calcAccel(double slope, double muk, double numerator, double denominator)
+    {
+        return -g * slope - muk * g * (numerator / denominator);
+    }
+
+    public boolean minimumSpeed(double speed)
+    {
+        return Math.abs(speed) < 0.01;
     }
 
     /**
@@ -366,10 +402,10 @@ public class PhysicsEngine
     public double[] ruleBasedBot(int solver)
     {
         int iterationNumber = 0;
-        for(double ySpeed = -5 * grassKinetic; ySpeed < targetY; ySpeed = ySpeed + 0.5 * targetRadius)
+        for(double ySpeed = -5; ySpeed < 5; ySpeed = ySpeed + 0.5 * targetRadius)
         {
             System.out.println("Trying new Y speed!!!!!!!!!!!");
-            for(double xSpeed = -5 * grassKinetic; xSpeed < targetX; xSpeed = xSpeed + 0.5 * targetRadius)
+            for(double xSpeed = -5; xSpeed < 5; xSpeed = xSpeed + 0.5 * targetRadius)
             {
                 iterationNumber++;
                 System.out.println("Trying new X speed!");
@@ -377,9 +413,12 @@ public class PhysicsEngine
                 stateVector[1] = firstY;
                 stateVector[2] = xSpeed;
                 stateVector[3] = ySpeed;
+                System.out.println("X speed: " + xSpeed);
+                System.out.println("Y speed: " + ySpeed);
                 while(stateVector[2] != 0 || stateVector[3] != 0)
                 {
                     runSimulation(xSpeed,ySpeed,solver);
+                    //System.out.println(stateVector[2] + " " + stateVector[3]);
                     if(inHole(stateVector[0],stateVector[1]))
                     {
                         System.out.println("Finding the speed took " + iterationNumber + " iterations");
@@ -529,14 +568,14 @@ public class PhysicsEngine
     public static void main(String[] args)
     {
         PhysicsEngine test = new PhysicsEngine("src\\example_inputfile.txt");
-        double[] speeds = test.ruleBasedBot(2);
+        /*double[] speeds = test.ruleBasedBot(2);
         if(speeds != null)
         {
             System.out.println("Found speeds!");
             System.out.println(speeds[0]);
             System.out.println(speeds[1]);
         }
-        else System.out.println("No speeds found!");
+        else System.out.println("No speeds found!");*/
         /*double[] speedsHillClimbing = test.hillClimbing(2);
         System.out.println(speedsHillClimbing[0]);
         System.out.println(speedsHillClimbing[1]);*/
