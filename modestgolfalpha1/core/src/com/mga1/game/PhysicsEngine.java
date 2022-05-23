@@ -7,8 +7,8 @@ public class PhysicsEngine
 {
     private boolean hasSand = false;
     public double firstX, firstY, targetX, targetY, targetRadius;
-    public double sandX1, sandX2, sandY1, sandY2;
     public double x1Wall, y1Wall, x2Wall, y2Wall;
+    public double sandX1, sandX2, sandY1, sandY2;
     private double grassKinetic, grassStatic;
     private double sandKinetic, sandStatic;
     private String heightProfile;
@@ -230,7 +230,7 @@ public class PhysicsEngine
                 stateVector[3] = 0;
                 acceleration = 0;
             }
-            else if(Math.abs(pythagoreanSpeed) < 0.01 && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
+            else if(minimumSpeed(pythagoreanSpeed) && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
             {
                 stateVector[2] = 0;
                 stateVector[3] = 0;
@@ -246,7 +246,7 @@ public class PhysicsEngine
             {
                 if(touchesWallDown(stateVector[0], stateVector[1]) || touchesWallUp(stateVector[0], stateVector[1]))
                 {
-                    stateVector[3] = -ySpeed; 
+                    stateVector[3] = -ySpeed;
                 }
                 else if(touchesWallLeft(stateVector[0], stateVector[1]) || touchesWallRight(stateVector[0], stateVector[1]))
                 {
@@ -270,7 +270,7 @@ public class PhysicsEngine
                 stateVector[3] = 0;
                 acceleration = 0;
             }
-            else if(Math.abs(pythagoreanSpeed) < 0.01 && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
+            else if(minimumSpeed(pythagoreanSpeed) && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
             {
                 stateVector[2] = 0;
                 stateVector[3] = 0;
@@ -286,7 +286,7 @@ public class PhysicsEngine
             {
                 if(touchesWallDown(stateVector[0], stateVector[1]) || touchesWallUp(stateVector[0], stateVector[1]))
                 {
-                    stateVector[3] = -ySpeed; 
+                    stateVector[3] = -ySpeed;
                 }
                 else if(touchesWallLeft(stateVector[0], stateVector[1]) || touchesWallRight(stateVector[0], stateVector[1]))
                 {
@@ -298,6 +298,13 @@ public class PhysicsEngine
         return acceleration;
     }
 
+    /**
+     * Checks if the current speed and slopes mean that the ball will stay in place
+     * @param speed the current speed
+     * @param slopeX the given x slope at a point
+     * @param slopeY the given y slope at a point
+     * @return true if the ball will stay in place
+     */
     private boolean inPit(double speed, double slopeX, double slopeY)
     {
         return Math.abs(speed) < 0.01 && slopeX == 0 & slopeY == 0;
@@ -319,11 +326,24 @@ public class PhysicsEngine
         return staticCoeff > Math.sqrt(derivativeX * derivativeX + derivativeY * derivativeY);
     }
 
+    /**
+     * The acceleration equation
+     * @param slope is the slope
+     * @param muk is the kinetic coefficient
+     * @param numerator is velocity or the slope (depends on if speed is 0)
+     * @param denominator is the euclidean distance of the slopes or speeds
+     * @return the acceleration
+     */
     public double calcAccel(double slope, double muk, double numerator, double denominator)
     {
         return -g * slope - muk * g * (numerator / denominator);
     }
 
+    /**
+     * This method defines the minimum cutoff speed
+     * @param speed is speed that needs to be checked
+     * @return true if the speed is less than the threshold
+     */
     public boolean minimumSpeed(double speed)
     {
         return Math.abs(speed) < 0.01;
@@ -430,6 +450,11 @@ public class PhysicsEngine
         }
     }
 
+    /**
+     * A simple rule based bot that iterates over all of the possible solutions based on the radius.
+     * @param solver is the desired solver.  0 is Euler's method, 1 is RK2, 2 is RK4
+     * @return the speeds the bot found that make the ball hit the hole
+     */
     public double[] ruleBasedBot(int solver)
     {
         int iterationNumber = 0;
@@ -461,12 +486,19 @@ public class PhysicsEngine
         return null;
     }
 
+    /**
+     * A more intelligent bot.  Tries shooting 3 shots from a random position, takes the best one and in this way it climbs its local hill.  If the hill is better than the current
+     * best located hill, then that is the new best located hill, and the speeds are randomly generated to try a different hill that could lead to the global solution.
+     * @param solver is the desired solver.  0 is Euler's method, 1 is RK2, 2 is RK4
+     * @return the speeds the AI found
+     */
     public double[] hillClimbing(int solver)
     {
         double[] bestSpeeds = new double[2];
         Random random = new Random(System.currentTimeMillis());
         double xSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 5;
         double ySpeed = (random.nextInt(2) - 1) * random.nextDouble() * 5;
+        System.out.println("Initial speeds are: " + xSpeed + " " + ySpeed);
         double currBest = Integer.MAX_VALUE;
         double localBest = Integer.MAX_VALUE;
         double[] bestPos = new double[2];
@@ -483,6 +515,7 @@ public class PhysicsEngine
         while(!inHole(bestPos[0],bestPos[1]))
         {
             iterationNumber++;
+            assert localPos != null;
             double euclideanDistance = distanceFromGoal(localPos);
 
             double spread = 2;
@@ -557,9 +590,16 @@ public class PhysicsEngine
                 //otherwise, attempt to shotgun out of local zone
                 System.out.println("Shotgun!");
                 localBest = Integer.MAX_VALUE;
-                xSpeed = xSpeed + (random.nextInt(2) - 1) * random.nextDouble() * 5;
-                ySpeed = ySpeed + (random.nextInt(2) - 1) * random.nextDouble() * 5;
+
+                xSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 5;
+                ySpeed = (random.nextInt(2) - 1) * random.nextDouble() * 5;
+
                 localPos = takeShot(new double[]{xSpeed,ySpeed},solver);
+                if(localPos == null)
+                {
+                    System.out.println("Finding the speeds took " + iterationNumber + " iterations");
+                    return new double[]{xSpeed,ySpeed};
+                }
             }
 
         }
@@ -567,16 +607,22 @@ public class PhysicsEngine
         return bestSpeeds;
     }
 
-    private boolean speedWithinBounds(double speed, double oldSpeed, double euclidean)
-    {
-        return oldSpeed - targetRadius * euclidean < speed && speed < oldSpeed + targetRadius * euclidean;
-    }
-
+    /**
+     * Subtracts vectors from each other and calculated the euclidean distance.
+     * @param vector is the vector whose distance from the goal is desired
+     * @return the euclidean distance from the goal
+     */
     private double distanceFromGoal(double[] vector)
     {
         return calculateEuclidean(targetX - vector[0],targetY - vector[1]);
     }
 
+    /**
+     * Simulates taking a shot.  Returns null if the ball hits the hole during the shot
+     * @param speed defines the initial speeds
+     * @param solver is the desired solver.  0 is Euler's method, 1 is RK2, 2 is RK4
+     * @return
+     */
     private double[] takeShot(double[] speed, int solver)
     {
         stateVector[0] = firstX;
@@ -594,49 +640,73 @@ public class PhysicsEngine
         return new double[]{stateVector[0],stateVector[1]};
     }
 
+    /**
+     * Calculates the euclidean distance from 2 variables
+     * @param x is the first variable
+     * @param y is the second variable
+     * @return the euclidean distance
+     */
     private double calculateEuclidean(double x, double y)
     {
         return Math.sqrt(x * x + y * y);
     }
 
-    private boolean inHole(double x, double y)
-    {
-        return (Math.pow(x - targetX,2) + Math.pow(y - targetY,2)) <= Math.pow(targetRadius,2);
-    }
 
-    private boolean inWater(double x, double y)
-    {
-        return function(x,y) < 0;
-    }
     private boolean touchesWallDown(double x, double y)
     {
         boolean isInsideX = x > x1Wall && x < x2Wall;
         boolean isInsideY = y > y1Wall && y < y2Wall/2;
         return isInsideX && isInsideY;
     }
+
     private boolean touchesWallUp(double x, double y)
     {
         boolean isInsideX = x > x1Wall && x < x2Wall;
         boolean isInsideY = y > y1Wall/2 && y < y2Wall;
         return isInsideX && isInsideY;
     }
+
     private boolean touchesWallLeft(double x, double y)
     {
         boolean isInsideX = x > x1Wall/2 && x < x2Wall;
         boolean isInsideY = y > y1Wall && y < y2Wall;
         return isInsideX && isInsideY;
     }
+
     private boolean touchesWallRight(double x, double y)
     {
         boolean isInsideX = x > x1Wall && x < x2Wall/2;
         boolean isInsideY = y > y1Wall && y < y2Wall;
         return isInsideX && isInsideY;
     }
+
     private boolean touchesWall(double x, double y)
     {
         boolean isInsideX = x > x1Wall && x < x2Wall;
         boolean isInsideY = y > y1Wall && y < y2Wall;
         return isInsideX && isInsideY;
+    }
+
+    /**
+     * Uses the equation of a circle to check whether the ball is inside the hole
+     * @param x is the current x position
+     * @param y is the current y position
+     * @return true if the ball is in the hole
+     */
+    private boolean inHole(double x, double y)
+    {
+        return (Math.pow(x - targetX,2) + Math.pow(y - targetY,2)) <= Math.pow(targetRadius,2);
+    }
+
+    /**
+     * A simple abstraction for whether the ball is in the water.
+     * @param x is the current x position
+     * @param y is the current y position
+     * @return true if the ball is in water
+     */
+    private boolean inWater(double x, double y)
+    {
+        return function(x,y) < 0;
     }
 
     public static void main(String[] args)
@@ -653,6 +723,7 @@ public class PhysicsEngine
         double[] speedsHillClimbing = test.hillClimbing(2);
         System.out.println(speedsHillClimbing[0]);
         System.out.println(speedsHillClimbing[1]);
+
         /*int count = 0;
         while(true)
         {
