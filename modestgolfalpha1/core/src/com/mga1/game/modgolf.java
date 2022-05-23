@@ -135,6 +135,8 @@ VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view))-100, (float)phys.
 
 		testfloor = createstuff();
 		Material water = new Material();
+		Material wallMaterial = new Material();
+		wallMaterial.set(new TextureAttribute(TextureAttribute.Diffuse, new Texture(Gdx.files.internal("modestgolfalpha1\\Textures\\carbontext.jpg"))));
 		water.set(new TextureAttribute(TextureAttribute.Diffuse, new Texture(Gdx.files.internal("modestgolfalpha1\\Textures\\water-pool.jpg"))));
 		Material gballs = new Material();
 		gballs.set(new TextureAttribute(TextureAttribute.Diffuse, new Texture(Gdx.files.internal("modestgolfalpha1\\Textures\\Golfball.png"))));
@@ -143,6 +145,7 @@ VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view))-100, (float)phys.
 		Model skyfix = bbuilder.createBox(1000,1000,1000, water, Usage.Position | Usage.Normal);
 		Model skyball = bbuilder.createSphere(-9000,-9000,-9000,64,64,water,Usage.Position | Usage.Normal);
 		Model flagpole = new Model();
+		Model wall = bbuilder.createBox((float)Math.abs(phys.x2Wall - phys.x1Wall) * 10, 30,(float)Math.abs(phys.y2Wall - phys.y1Wall), wallMaterial, Usage.Position | Usage.Normal);
 		Model grassp = bbuilder.createBox(256f,1f,256f,grass2, Usage.Position | Usage.Normal);
 		flagpole = new G3dModelLoader(new JsonReader()).loadModel(Gdx.files.internal("modestgolfalpha1\\models\\flagpole.g3dj"));
 
@@ -153,6 +156,7 @@ VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view))-100, (float)phys.
 		ModelInstance penaltygrass = new ModelInstance(grassp,128, -8, 128);
 		golfbol = new ModelInstance(golfball, 0, 0, 0);
 		ModelInstance skybox = new ModelInstance(sky);
+		ModelInstance wallInstance = new ModelInstance(wall, (float)phys.x1Wall + 64, (float)(phys.function(phys.x1Wall, phys.y1Wall)) - 4, (float)(phys.y1Wall) + 190);
 		ModelInstance ground = new ModelInstance(testfloor,65,0,193);	
 		ModelInstance skybox2 = new ModelInstance(skyfix);
 		ModelInstance flag = new ModelInstance(flagpole, (float)phys.targetX+64,(float)(phys.function(phys.targetX,phys.targetY))-4,(float)(phys.targetY)+190);
@@ -170,6 +174,7 @@ VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view))-100, (float)phys.
 		instances.add(ball);
 		instances.add(ground);
 		instances.add(putt);
+		instances.add(wallInstance);
 
 		modelBatch = new ModelBatch();
 		environment = new Environment();
