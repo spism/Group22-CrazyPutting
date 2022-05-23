@@ -10,3 +10,5 @@ sandPitX = -1 < x < 1
 sandPitY = 1 < y < 2
 muks = 0.25
 muss = 0.3
+xWall = -1 < x < 1
+yWall = 1 < y < 2
