@@ -8,6 +8,7 @@ public class PhysicsEngine
     private boolean hasSand = false;
     public double firstX, firstY, targetX, targetY, targetRadius;
     public double sandX1, sandX2, sandY1, sandY2;
+    public double x1Wall, y1Wall, x2Wall, y2Wall;
     private double grassKinetic, grassStatic;
     private double sandKinetic, sandStatic;
     private String heightProfile;
@@ -66,6 +67,14 @@ public class PhysicsEngine
                     sandKinetic = Double.parseDouble(arr[2]);
                     arr = br.readLine().split(" ");
                     sandStatic = Double.parseDouble(arr[2]);
+                }
+                 else if(lineIndex == 6)
+                {
+                    x1Wall = Double.parseDouble(arr[2]);
+                    x2Wall = Double.parseDouble(arr[6]);
+                    arr = br.readLine().split(" ");
+                    y1Wall = Double.parseDouble(arr[2]);
+                    y2Wall = Double.parseDouble(arr[6]);
                 }
                 lineIndex++;
             }
@@ -233,6 +242,17 @@ public class PhysicsEngine
                 stateVector[3] = 0;
                 acceleration = 0;
             }
+            else if(touchesWall(stateVector[0],stateVector[1]))
+            {
+                if(touchesWallDown(stateVector[0], stateVector[1]) || touchesWallUp(stateVector[0], stateVector[1]))
+                {
+                    stateVector[3] = -ySpeed; 
+                }
+                else if(touchesWallLeft(stateVector[0], stateVector[1]) || touchesWallRight(stateVector[0], stateVector[1]))
+                {
+                    stateVector[2] = -xSpeed;
+                }
+            }
             else
             {
                 acceleration = calcAccel(slopeX,kineticCoeff,xSpeed,denominator);
@@ -261,6 +281,17 @@ public class PhysicsEngine
                 stateVector[2] = 0;
                 stateVector[3] = 0;
                 acceleration = 0;
+            }
+            else if(touchesWall(stateVector[0],stateVector[1]))
+            {
+                if(touchesWallDown(stateVector[0], stateVector[1]) || touchesWallUp(stateVector[0], stateVector[1]))
+                {
+                    stateVector[3] = -ySpeed; 
+                }
+                else if(touchesWallLeft(stateVector[0], stateVector[1]) || touchesWallRight(stateVector[0], stateVector[1]))
+                {
+                    stateVector[2] = -xSpeed;
+                }
             }
             else acceleration = calcAccel(slopeY,kineticCoeff,ySpeed,denominator);
         }
@@ -563,6 +594,36 @@ public class PhysicsEngine
     private boolean inWater(double x, double y)
     {
         return function(x,y) < 0;
+    }
+    private boolean touchesWallDown(double x, double y)
+    {
+        boolean isInsideX = x > x1Wall && x < x2Wall;
+        boolean isInsideY = y > y1Wall && y < y2Wall/2;
+        return isInsideX && isInsideY;
+    }
+    private boolean touchesWallUp(double x, double y)
+    {
+        boolean isInsideX = x > x1Wall && x < x2Wall;
+        boolean isInsideY = y > y1Wall/2 && y < y2Wall;
+        return isInsideX && isInsideY;
+    }
+    private boolean touchesWallLeft(double x, double y)
+    {
+        boolean isInsideX = x > x1Wall/2 && x < x2Wall;
+        boolean isInsideY = y > y1Wall && y < y2Wall;
+        return isInsideX && isInsideY;
+    }
+    private boolean touchesWallRight(double x, double y)
+    {
+        boolean isInsideX = x > x1Wall && x < x2Wall/2;
+        boolean isInsideY = y > y1Wall && y < y2Wall;
+        return isInsideX && isInsideY;
+    }
+    private boolean touchesWall(double x, double y)
+    {
+        boolean isInsideX = x > x1Wall && x < x2Wall;
+        boolean isInsideY = y > y1Wall && y < y2Wall;
+        return isInsideX && isInsideY;
     }
 
     public static void main(String[] args)
