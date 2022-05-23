@@ -8,7 +8,6 @@ public class PhysicsEngine
     private boolean hasSand = false;
     public double firstX, firstY, targetX, targetY, targetRadius;
     public double sandX1, sandX2, sandY1, sandY2;
-    public double x1Wall, y1Wall, x2Wall, y2Wall;
     private double grassKinetic, grassStatic;
     private double sandKinetic, sandStatic;
     private String heightProfile;
@@ -67,14 +66,6 @@ public class PhysicsEngine
                     sandKinetic = Double.parseDouble(arr[2]);
                     arr = br.readLine().split(" ");
                     sandStatic = Double.parseDouble(arr[2]);
-                }
-                 else if(lineIndex == 6)
-                {
-                    x1Wall = Double.parseDouble(arr[2]);
-                    x2Wall = Double.parseDouble(arr[6]);
-                    arr = br.readLine().split(" ");
-                    y1Wall = Double.parseDouble(arr[2]);
-                    y2Wall = Double.parseDouble(arr[6]);
                 }
                 lineIndex++;
             }
@@ -242,17 +233,6 @@ public class PhysicsEngine
                 stateVector[3] = 0;
                 acceleration = 0;
             }
-            else if(touchesWall(stateVector[0],stateVector[1]))
-            {
-                if(touchesWallDown(stateVector[0], stateVector[1]) || touchesWallUp(stateVector[0], stateVector[1]))
-                {
-                    stateVector[3] = -ySpeed; 
-                }
-                else if(touchesWallLeft(stateVector[0], stateVector[1]) || touchesWallRight(stateVector[0], stateVector[1]))
-                {
-                    stateVector[2] = -xSpeed;
-                }
-            }
             else
             {
                 acceleration = calcAccel(slopeX,kineticCoeff,xSpeed,denominator);
@@ -281,17 +261,6 @@ public class PhysicsEngine
                 stateVector[2] = 0;
                 stateVector[3] = 0;
                 acceleration = 0;
-            }
-            else if(touchesWall(stateVector[0],stateVector[1]))
-            {
-                if(touchesWallDown(stateVector[0], stateVector[1]) || touchesWallUp(stateVector[0], stateVector[1]))
-                {
-                    stateVector[3] = -ySpeed; 
-                }
-                else if(touchesWallLeft(stateVector[0], stateVector[1]) || touchesWallRight(stateVector[0], stateVector[1]))
-                {
-                    stateVector[2] = -xSpeed;
-                }
             }
             else acceleration = calcAccel(slopeY,kineticCoeff,ySpeed,denominator);
         }
@@ -463,108 +432,121 @@ public class PhysicsEngine
 
     public double[] hillClimbing(int solver)
     {
-        double[] finalSpeeds = new double[2];
+        double[] bestSpeeds = new double[2];
         Random random = new Random(System.currentTimeMillis());
-        double XSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 5;
-        double YSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 5;
+        double xSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 5;
+        double ySpeed = (random.nextInt(2) - 1) * random.nextDouble() * 5;
         double currBest = Integer.MAX_VALUE;
-        double[] goalState = {targetX, targetY};
+        double localBest = Integer.MAX_VALUE;
         double[] bestPos = new double[2];
+        double[] localPos = takeShot(new double[]{xSpeed,ySpeed},solver);
+        int prevIndex = -1;
         int iterationNumber = 0;
+
 
         //used to find the current speed using random values
         if(inHole(bestPos[0],bestPos[1]))
         {
-            return finalSpeeds;
+            return bestSpeeds;
         }
         while(!inHole(bestPos[0],bestPos[1]))
         {
             iterationNumber++;
-            double[] rightScore = new double[2];
-            double[] leftScore = new double[2];
-            double[] rightPos = new double[2];
-            double[] leftPos = new double[2];
-            for(int i = 0; i < 2; i++)
-            {
-                rightScore[i] = goalState[i] - stateVector[i];
-            }
-            double euclideanDistance = calculateEuclidean(bestPos[0],bestPos[1]);
-            //left and right speeds (the current speed is change by a bit in both directions) are evaluated and the better one is chosen
-            double[] rightSpeed = {XSpeed + targetRadius * euclideanDistance, YSpeed + targetRadius * euclideanDistance};
-            double[] leftSpeed = {XSpeed - targetRadius * euclideanDistance, YSpeed - targetRadius * euclideanDistance};
+            double euclideanDistance = distanceFromGoal(localPos);
 
-            //evaluating right shot
-            if(takeShot(rightSpeed) != null)
+            double spread = 2;
+            //left and right speeds (the current speed is change by a bit in both directions) are evaluated and the better one is chosen
+            double[] rightSpeed = {xSpeed - spread * targetRadius * euclideanDistance, ySpeed + spread * targetRadius * euclideanDistance};
+            double[] leftSpeed = {xSpeed + spread * targetRadius * euclideanDistance, ySpeed - spread * targetRadius * euclideanDistance};
+            double[] strongerSpeed = {xSpeed + spread * targetRadius * euclideanDistance, ySpeed + spread * targetRadius * euclideanDistance};
+
+            //order is very important, keep shots in order left -> center -> right with respective indices 0, 1, 2 or any multiple of those
+            double[][] speeds = {leftSpeed,strongerSpeed,rightSpeed};
+
+            double[] centerShot = takeShot(strongerSpeed, solver);
+            if(centerShot == null)
+            {
+                System.out.println("Finding the speeds took " + iterationNumber + " iterations");
+                return strongerSpeed;
+            }
+
+            double[] rightShot = takeShot(rightSpeed, solver);
+            if(rightShot == null)
             {
                 System.out.println("Finding the speeds took " + iterationNumber + " iterations");
                 return rightSpeed;
             }
-            rightPos[0] = stateVector[0];
-            rightPos[1] = stateVector[1];
-            //System.out.println("Right position X is: " + rightPos[0]);
-            //System.out.println("Right position Y is: " + rightPos[1]);
-            for(int i = 0; i < 2; i++)
-            {
-                rightScore[i] = goalState[i] - stateVector[i];
-            }
-            double rightEuclidean = calculateEuclidean(rightScore[0],rightScore[1]);
 
-            //evaluating left shot
-            if(takeShot(leftSpeed) != null)
+            double[] leftShot = takeShot(leftSpeed, solver);
+            if(leftShot == null)
             {
                 System.out.println("Finding the speeds took " + iterationNumber + " iterations");
                 return leftSpeed;
             }
-            leftPos[0] = stateVector[0];
-            leftPos[1] = stateVector[1];
-            //System.out.println("Left position X is: " + leftPos[0]);
-            //System.out.println("Left position Y is: " + leftPos[1]);
-            for(int i = 0; i < 2; i++)
-            {
-                leftScore[i] = goalState[i] - stateVector[i];
-            }
-            double leftEuclidean = calculateEuclidean(leftScore[0],leftScore[1]);
 
-            if(rightEuclidean < currBest)
+            double[][] shotsTaken = {leftShot,centerShot,rightShot};
+
+            double min = Integer.MAX_VALUE;
+            int index = -1;
+            double[] distancesFromGoal = {distanceFromGoal(leftShot),distanceFromGoal(centerShot),distanceFromGoal(rightShot)};
+            for(int i = 0; i < 3; i++)
             {
-                currBest = rightEuclidean;
-                XSpeed = rightSpeed[0];
-                YSpeed = rightSpeed[1];
-                bestPos[0] = rightPos[0];
-                bestPos[1] = rightPos[1];
+                if(distancesFromGoal[i] < min)
+                {
+                    min = distancesFromGoal[i];
+                    index = i;
+                }
             }
-            else if(leftEuclidean < currBest)
+
+            if(min < localBest)
             {
-                currBest = leftEuclidean;
-                XSpeed = leftSpeed[0];
-                YSpeed = leftSpeed[1];
-                bestPos[0] = leftPos[0];
-                bestPos[1] = leftPos[1];
+                //while climbing the local slope, set local best to new best, change speeds to new best and position to new best
+                System.out.println("local hill climbing");
+                prevIndex = index;
+                localBest = min;
+                xSpeed = speeds[index][0];
+                ySpeed = speeds[index][1];
+                localPos = shotsTaken[index];
             }
-            else if(rightEuclidean < leftEuclidean)
+            else if(localBest < currBest)
             {
-                currBest = rightEuclidean;
-                XSpeed = rightSpeed[0];
-                YSpeed = rightSpeed[1];
-                bestPos[0] = rightPos[0];
-                bestPos[1] = rightPos[1];
+                //if local peak has been reached, check if the local peak is indeed better than the current located global peak
+                System.out.println("Improvement!  New best position!");
+                System.out.println(localBest);
+                currBest = localBest;
+                bestSpeeds[0] = xSpeed;
+                bestSpeeds[1] = ySpeed;
+                System.out.println("Best speeds are " + bestSpeeds[0] + " " + bestSpeeds[1]);
+                bestPos = shotsTaken[prevIndex];
+                System.out.println("euclidean is " + distanceFromGoal(bestPos));
+                System.out.println("Best positions are " + bestPos[0] + " " + bestPos[1]);
             }
             else
             {
-                currBest = leftEuclidean;
-                XSpeed = leftSpeed[0];
-                YSpeed = leftSpeed[1];
-                bestPos[0] = leftPos[0];
-                bestPos[1] = leftPos[1];
+                //otherwise, attempt to shotgun out of local zone
+                System.out.println("Shotgun!");
+                localBest = Integer.MAX_VALUE;
+                xSpeed = xSpeed + (random.nextInt(2) - 1) * random.nextDouble() * 5;
+                ySpeed = ySpeed + (random.nextInt(2) - 1) * random.nextDouble() * 5;
+                localPos = takeShot(new double[]{xSpeed,ySpeed},solver);
             }
-            System.out.println("Current best is: " + bestPos[0]);
-            System.out.println("Current best is " + bestPos[1]);
+
         }
         System.out.println("Finding the speeds took " + iterationNumber + " iterations");
-        return finalSpeeds;
+        return bestSpeeds;
     }
 
-    private double[] takeShot(double[] speed)
+    private boolean speedWithinBounds(double speed, double oldSpeed, double euclidean)
+    {
+        return oldSpeed - targetRadius * euclidean < speed && speed < oldSpeed + targetRadius * euclidean;
+    }
+
+    private double distanceFromGoal(double[] vector)
+    {
+        return calculateEuclidean(targetX - vector[0],targetY - vector[1]);
+    }
+
+    private double[] takeShot(double[] speed, int solver)
     {
         stateVector[0] = firstX;
         stateVector[1] = firstY;
@@ -574,11 +556,11 @@ public class PhysicsEngine
         {
             if(inHole(stateVector[0],stateVector[1]))
             {
-                return new double[]{speed[0],speed[1]};
+                return null;
             }
-            runSimulation(speed[0],speed[1],2);
+            runSimulation(speed[0],speed[1],solver);
         }
-        return null;
+        return new double[]{stateVector[0],stateVector[1]};
     }
 
     private double calculateEuclidean(double x, double y)
@@ -595,36 +577,6 @@ public class PhysicsEngine
     {
         return function(x,y) < 0;
     }
-    private boolean touchesWallDown(double x, double y)
-    {
-        boolean isInsideX = x > x1Wall && x < x2Wall;
-        boolean isInsideY = y > y1Wall && y < y2Wall/2;
-        return isInsideX && isInsideY;
-    }
-    private boolean touchesWallUp(double x, double y)
-    {
-        boolean isInsideX = x > x1Wall && x < x2Wall;
-        boolean isInsideY = y > y1Wall/2 && y < y2Wall;
-        return isInsideX && isInsideY;
-    }
-    private boolean touchesWallLeft(double x, double y)
-    {
-        boolean isInsideX = x > x1Wall/2 && x < x2Wall;
-        boolean isInsideY = y > y1Wall && y < y2Wall;
-        return isInsideX && isInsideY;
-    }
-    private boolean touchesWallRight(double x, double y)
-    {
-        boolean isInsideX = x > x1Wall && x < x2Wall/2;
-        boolean isInsideY = y > y1Wall && y < y2Wall;
-        return isInsideX && isInsideY;
-    }
-    private boolean touchesWall(double x, double y)
-    {
-        boolean isInsideX = x > x1Wall && x < x2Wall;
-        boolean isInsideY = y > y1Wall && y < y2Wall;
-        return isInsideX && isInsideY;
-    }
 
     public static void main(String[] args)
     {
@@ -637,9 +589,9 @@ public class PhysicsEngine
             System.out.println(speeds[1]);
         }
         else System.out.println("No speeds found!");*/
-        /*double[] speedsHillClimbing = test.hillClimbing(2);
+        double[] speedsHillClimbing = test.hillClimbing(2);
         System.out.println(speedsHillClimbing[0]);
-        System.out.println(speedsHillClimbing[1]);*/
+        System.out.println(speedsHillClimbing[1]);
         /*int count = 0;
         while(true)
         {
@@ -652,9 +604,10 @@ public class PhysicsEngine
                 System.out.println(test.stateVector[3]);
             }
             if(test.targetX - test.targetRadius < test.stateVector[0] && test.stateVector[0] < test.targetX + test.targetRadius && test.targetY - test.targetRadius < test.stateVector[1] && test.stateVector[1] < test.targetY + test.targetRadius) break;
-            test.runSimulation(3,0,2);
+            test.runSimulation(3,0,0);
             if(test.stateVector[2] == 0 && test.stateVector[3] == 0)
             {
+                System.out.println("Required " + count + " calculations");
                 System.out.println("Final step: ");
                 System.out.println(test.stateVector[0]);
                 System.out.println(test.stateVector[1]);
