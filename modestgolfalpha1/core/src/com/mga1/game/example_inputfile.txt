@@ -1,14 +1,8 @@
-x0 = 0
-y0 = 0
+x0 = -1
+y0 = -0.5
 xt = 4
 yt = 1
 r = 0.1
 muk = 0.1
 mus = 0.2
 heightProfile = ( e ^ ( ( -1 * ( ( x ^ 2 ) + ( y ^ 2 ) ) ) / 40 ) )
-sandPitX = -1 < x < 1
-sandPitY = 1 < y < 2
-muks = 0.25
-muss = 0.3
-xWall = -1 < x < 1
-yWall = 1 < y < 2
