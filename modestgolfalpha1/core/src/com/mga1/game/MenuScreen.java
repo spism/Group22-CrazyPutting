@@ -70,14 +70,14 @@ public class MenuScreen implements Screen{
         //TextButton preferences = new TextButton("Preferences", skin);
         TextButton exit = new TextButton("Exit", skin);
 
-        final TextField fieldX0 = new TextField("X0", skin);
-        final TextField fieldY0 = new TextField("Y0", skin);
-        final TextField fieldXt = new TextField("Xt", skin);
-        final TextField fieldYt = new TextField("Yt", skin);
-        final TextField fieldRadius = new TextField("Radius", skin);
-        final TextField fieldMuk = new TextField("Muk", skin);
-        final TextField fieldMus = new TextField("Mus", skin);
-        final TextField fieldHeightProfile = new TextField("Height Profile", skin);
+        final TextField fieldX0 = new TextField("X0 = ", skin);
+        final TextField fieldY0 = new TextField("Y0 = ", skin);
+        final TextField fieldXt = new TextField("Xt = ", skin);
+        final TextField fieldYt = new TextField("Yt = ", skin);
+        final TextField fieldRadius = new TextField("Radius = ", skin);
+        final TextField fieldMuk = new TextField("Muk = ", skin);
+        final TextField fieldMus = new TextField("Mus = ", skin);
+        final TextField fieldHeightProfile = new TextField("HeightProfile = ", skin);
         
         table.add(fieldX0).fillX().uniformX();
         table.row().pad(5, 0, 5, 0);
@@ -109,13 +109,20 @@ public class MenuScreen implements Screen{
         newGame.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
-                x0 = fieldX0.getText();
-                y0 = fieldY0.getText();
-                xT = fieldXt.getText();
-                yT = fieldYt.getText();
-                radius = fieldRadius.getText();
-                muk = fieldMuk.getText();
-                mus = fieldMus.getText();
+                String[] arr1 = fieldX0.getText().split(" ");
+                x0 = arr1[arr1.length - 1];
+                String[] arr2 = fieldY0.getText().split(" ");
+                y0 = arr2[arr2.length - 1];
+                String[] arr3 = fieldXt.getText().split(" ");
+                xT = arr3[arr3.length - 1];
+                String[] arr4 = fieldYt.getText().split(" ");
+                yT = arr4[arr4.length - 1];
+                String[] arr5 = fieldRadius.getText().split(" ");
+                radius = arr5[arr5.length - 1];
+                String[] arr6 = fieldMuk.getText().split(" ");
+                muk = arr6[arr6.length - 1];
+                String[] arr7 = fieldMus.getText().split(" ");
+                mus = arr7[arr7.length - 1];
                 heightProfile = fieldHeightProfile.getText();
                 game.changeScreen(game.APPLICATION);
             }
