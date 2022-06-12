@@ -1,23 +1,25 @@
 package com.mga1.game;
+
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Random;
-import java.util.Stack;
 
 public class PhysicsEngine
 {
     private boolean hasSand = false;
-    public double firstX, firstY, targetX, targetY, targetRadius;
-    public double x1Wall, y1Wall, x2Wall, y2Wall;
-    public double sandX1, sandX2, sandY1, sandY2;
-    private double grassKinetic, grassStatic;
-    private double sandKinetic, sandStatic;
-    private String heightProfile;
-    private final double h = 0.01;
-    private final double g = 9.81;
+    public double firstX, firstY, targetX, targetY, targetRadius, x1Wall, x2Wall, y1Wall, y2Wall, sandX1, sandX2, sandY1, sandY2, grassKinetic, grassStatic, sandKinetic, sandStatic;
+    private Function heightProfile;
+    public final double h = 0.01;
     public double[] stateVector = new double[4];
     private boolean initSpeedsDefined = false;
-    public PhysicsEngine(String filename)
+    private static PhysicsEngine physicsEngine;
+    private static final ArrayList<Solver> solvers = new ArrayList<>();
+    public Function getHeightProfile() {
+        return heightProfile;
+    }
+    private PhysicsEngine(String filename)
     {
+        
         try
         {
             FileReader fr = new FileReader(filename);
@@ -50,7 +52,7 @@ public class PhysicsEngine
                 }
                 else if(lineIndex == 3)
                 {
-                    heightProfile = line;
+                    heightProfile = new Function(line);
                     //getHeight(heightProfile,firstX,firstY);
                 }
                 else if(lineIndex == 4)
@@ -83,111 +85,41 @@ public class PhysicsEngine
         {
             System.out.println("I/O exception");
         }
+        
+    }
+    private PhysicsEngine(String x0, String y0, String xT, String yT, String radius, String muk, String mus, String heightProfile)
+    {
+        firstX = Double.parseDouble(x0);
+        firstY = Double.parseDouble(y0);
+        targetX = Double.parseDouble(xT);
+        targetY = Double.parseDouble(yT);
+        targetRadius = Double.parseDouble(radius);
+        grassKinetic = Double.parseDouble(muk);
+        grassStatic = Double.parseDouble(mus);
+        this.heightProfile = new Function(heightProfile);
+        
     }
 
-    /**
-     * This method evaluates the expression for height for a given X and Y coordinate.  It works with the functions sin, cos, tan,
-     * log with base 10, natural logarithm, and can perform addition, subtraction, multiplication and division granted there is a pair
-     * of brackets for each performed operation.  It can work with up to two unknowns and can use the value for pi and Euler's
-     * number.
-     * @param x is the x coordinate
-     * @param y is the y coordinate
-     * @return the height for the coordinates
-     */
-    public double function(double x, double y)
+    private static void initSolvers()
     {
-        Stack<String> ops = new Stack<>();
-        Stack<Double> vals = new Stack<>();
-        String[] arr = heightProfile.split(" ");
-        for(int i = 2; i < arr.length; i++)
+        solvers.add(new EulersMethod());
+        solvers.add(new RungeKutta2());
+        solvers.add(new RungeKutta4());
+    }
+
+    public static PhysicsEngine getPhysicsEngine(String x0, String y0, String xT, String yT, String radius, String muk, String mus, String heightProfile)
+    {
+        if(physicsEngine == null)
         {
-            String curr = arr[i];
-            if(curr.equals("("));
-            else if(curr.equals("+")) ops.push(curr);
-            else if(curr.equals("-")) ops.push(curr);
-            else if(curr.equals("*")) ops.push(curr);
-            else if(curr.equals("/")) ops.push(curr);
-            else if(curr.equals("^")) ops.push(curr);
-            else if(curr.equals("sin")) ops.push(curr);
-            else if(curr.equals("cos")) ops.push(curr);
-            else if(curr.equals("sqrt")) ops.push(curr);
-            else if(curr.equals("abs")) ops.push(curr);
-            else if(curr.equals("logb10")) ops.push(curr);
-            else if(curr.equals("logbe")) ops.push(curr);
-            else if(curr.equals(")"))
-            {
-                String operator = ops.pop();
-                double val = vals.pop();
-                //System.out.println("something " + operator + " " + val + " = ");
-                if(operator.equals("+")) val = vals.pop() + val;
-                else if(operator.equals("-")) val = vals.pop() - val;
-                else if(operator.equals("*")) val = vals.pop() * val;
-                else if(operator.equals("/")) val = vals.pop() / val;
-                else if(operator.equals("^")) val = Math.pow(vals.pop(),val);
-                else if(operator.equals("sin")) val = Math.sin(val);
-                else if(operator.equals("cos")) val = Math.cos(val);
-                else if(operator.equals("sqrt")) val = Math.sqrt(val);
-                else if(operator.equals("abs")) val = Math.abs(val);
-                else if(operator.equals("logb10")) val = Math.log10(val);
-                else if(operator.equals("logbe")) val = Math.log(val);
-                //System.out.print(val);
-                //System.out.println();
-                vals.push(val);
-            }
-            else
-            {
-                //System.out.println(checkXY(curr,x,y));
-                vals.push(checkXY(curr,x,y));
-                //System.out.println(checkXY(curr,x,y));
-            }
+            physicsEngine = new PhysicsEngine(x0, y0, xT, yT, radius, muk, mus, heightProfile);
+            initSolvers();
         }
-        double result = vals.pop();
-        //System.out.println(result);
-        return result;
+
+        return physicsEngine;
     }
-
-    /**
-     * Replaces x/y variables with their respective values (to remove unknowns)
-     * @param s is the value found inside the height profile function
-     * @param x is the x coordinate
-     * @param y is the y coordinate
-     * @return the value that the input string has (can be the value for x, y or the value itself if e.g. the string is 0.5)
-     */
-    public double checkXY(String s, double x, double y)
+    public static PhysicsEngine getPhysicsEngine()
     {
-        //System.out.println(x + " " + y);
-        if(s.equals("x")) return x;
-        else if(s.equals("y")) return y;
-        else if(s.equals("e")) return 2.71828;
-        else if(s.equals("pi")) return 3.14;
-        else if(s.equals("g")) return 9.81;
-        else return Double.parseDouble(s);
-    }
-
-    /**
-     * This method updates the state vector using Euler's method.  It is used to approximate the motion of a ball on a slope given by the input file
-     * height profile line.
-     */
-    public double[] updateVectorEuler(double[] stateVector)
-    {
-        double[] stepVector = new double[4];
-        double xAccel = getAccel(true,false,stateVector);
-        double yAccel = getAccel(false,true,stateVector);
-        //System.out.println(secondTermX + " " + secondTermY);
-        //System.out.println("x acceleration: " + xAccel + " y acceleration: " + yAccel);
-
-        stepVector[0] = stateVector[2];
-        stepVector[1] = stateVector[3];
-        stepVector[2] = xAccel;
-        stepVector[3] = yAccel;
-        for(int i = 0; i < stateVector.length; i++)
-        {
-            //System.out.println(stateVector[i] + " + " + h + " * " + stepVector[i]);
-            stateVector[i] = stateVector[i] + h * stepVector[i];
-            //System.out.println(stateVector[i]);
-        }
-        //System.out.println();
-        return stateVector;
+        return physicsEngine;
     }
 
     /**
@@ -197,7 +129,7 @@ public class PhysicsEngine
      * @param y should be the only true variable if the y acceleration is required
      * @return the x or y acceleration based on the parameters
      */
-    private double getAccel(boolean x, boolean y, double[] stateVector)
+    public double getAccel(boolean x, boolean y, double[] stateVector)
     {
         double xCoor = stateVector[0];
         double yCoor = stateVector[1];
@@ -208,8 +140,11 @@ public class PhysicsEngine
         double newX = xCoor + limitZero;
         double newY = yCoor + limitZero;
 
-        double slopeX = (function(newX,yCoor) - function(xCoor,yCoor)) / limitZero;
-        double slopeY = (function(xCoor,newY) - function(xCoor, yCoor)) / limitZero;
+        double slopeX = (heightProfile.evaluate(newX,yCoor) - heightProfile.evaluate(xCoor,yCoor)) / limitZero;
+        double slopeY = (heightProfile.evaluate(xCoor,newY) - heightProfile.evaluate(xCoor, yCoor)) / limitZero;
+
+        double mainSlope;
+        double mainSpeed;
 
         double kineticCoeff = hasSand && sandX1 < xCoor && xCoor < sandX2 && sandY1 < yCoor && yCoor < sandY2 ? sandKinetic : grassKinetic;
         double acceleration = 0;
@@ -220,81 +155,53 @@ public class PhysicsEngine
 
         if(x && !y)
         {
-            if(minimumSpeed(pythagoreanSpeed) && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor))
-            {
-                acceleration = calcAccel(slopeX,kineticCoeff,slopeX,denominator2);
-            }
-            else if(inPit(pythagoreanSpeed,slopeX,slopeY))
-            {
-                stateVector[2] = 0;
-                stateVector[3] = 0;
-                acceleration = 0;
-            }
-            else if(minimumSpeed(pythagoreanSpeed) && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
-            {
-                stateVector[2] = 0;
-                stateVector[3] = 0;
-                acceleration = 0;
-            }
-            else if(inWater(stateVector[0],stateVector[1]))
-            {
-                stateVector[2] = 0;
-                stateVector[3] = 0;
-                acceleration = 0;
-            }
-            else if(touchesWall(stateVector[0],stateVector[1]))
-            {
-                if(touchesWallDown(stateVector[0], stateVector[1]) || touchesWallUp(stateVector[0], stateVector[1]))
-                {
-                    stateVector[3] = -ySpeed;
-                }
-                else if(touchesWallLeft(stateVector[0], stateVector[1]) || touchesWallRight(stateVector[0], stateVector[1]))
-                {
-                    stateVector[2] = -xSpeed;
-                }
-            }
-            else
-            {
-                acceleration = calcAccel(slopeX,kineticCoeff,xSpeed,denominator);
-            }
+            mainSlope = slopeX;
+            mainSpeed = xSpeed;
         }
-        else if(y && !x)
+        else
         {
-            if(minimumSpeed(pythagoreanSpeed) && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor))
-            {
-                acceleration = calcAccel(slopeY,kineticCoeff,slopeY,denominator2);
-            }
-            else if(inPit(pythagoreanSpeed,slopeX,slopeY))
-            {
-                stateVector[2] = 0;
-                stateVector[3] = 0;
-                acceleration = 0;
-            }
-            else if(minimumSpeed(pythagoreanSpeed) && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
-            {
-                stateVector[2] = 0;
-                stateVector[3] = 0;
-                acceleration = 0;
-            }
-            else if(inWater(stateVector[0],stateVector[1]))
-            {
-                stateVector[2] = 0;
-                stateVector[3] = 0;
-                acceleration = 0;
-            }
-            else if(touchesWall(stateVector[0],stateVector[1]))
-            {
-                if(touchesWallDown(stateVector[0], stateVector[1]) || touchesWallUp(stateVector[0], stateVector[1]))
-                {
-                    stateVector[3] = -ySpeed;
-                }
-                else if(touchesWallLeft(stateVector[0], stateVector[1]) || touchesWallRight(stateVector[0], stateVector[1]))
-                {
-                    stateVector[2] = -xSpeed;
-                }
-            }
-            else acceleration = calcAccel(slopeY,kineticCoeff,ySpeed,denominator);
+            mainSlope = slopeY;
+            mainSpeed = ySpeed;
         }
+
+        if(minimumSpeed(pythagoreanSpeed) && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor))
+        {
+            acceleration = calcAccel(mainSlope,kineticCoeff,mainSlope,denominator2);
+        }
+        else if(inPit(pythagoreanSpeed,slopeX,slopeY))
+        {
+            stateVector[2] = 0;
+            stateVector[3] = 0;
+            acceleration = 0;
+        }
+        else if(minimumSpeed(pythagoreanSpeed) && (slopeX != 0 || slopeY != 0) && atRest(xCoor,yCoor))
+        {
+            stateVector[2] = 0;
+            stateVector[3] = 0;
+            acceleration = 0;
+        }
+        else if(inWater(stateVector[0],stateVector[1]))
+        {
+            stateVector[2] = 0;
+            stateVector[3] = 0;
+            acceleration = 0;
+        }
+        else if(touchesWall(stateVector[0],stateVector[1]))
+        {
+            if(touchesWallDown(stateVector[0], stateVector[1]) || touchesWallUp(stateVector[0], stateVector[1]))
+            {
+                stateVector[3] = -ySpeed;
+            }
+            else if(touchesWallLeft(stateVector[0], stateVector[1]) || touchesWallRight(stateVector[0], stateVector[1]))
+            {
+                stateVector[2] = -xSpeed;
+            }
+        }
+        else
+        {
+            acceleration = calcAccel(mainSlope,kineticCoeff,mainSpeed,denominator);
+        }
+
         return acceleration;
     }
 
@@ -320,8 +227,8 @@ public class PhysicsEngine
     {
         double staticCoeff = hasSand && sandX1 < x && x < sandX2 && sandY1 < y && y < sandY2 ? sandStatic : grassStatic;
         double limitZero = 0.000000000001;
-        double derivativeX = (Math.abs(function(x,y) - function(x + limitZero,y))) / limitZero;
-        double derivativeY = (Math.abs(function(x,y) - function(x,y + limitZero))) / limitZero;
+        double derivativeX = (Math.abs(heightProfile.evaluate(x,y) - heightProfile.evaluate(x + limitZero, y))) / limitZero;
+        double derivativeY = (Math.abs(heightProfile.evaluate(x, y) - heightProfile.evaluate(x, y + limitZero))) / limitZero;
         //System.out.println(derivativeX + " " + derivativeY);
         return staticCoeff > Math.sqrt(derivativeX * derivativeX + derivativeY * derivativeY);
     }
@@ -336,6 +243,7 @@ public class PhysicsEngine
      */
     public double calcAccel(double slope, double muk, double numerator, double denominator)
     {
+        double g = 9.81;
         return -g * slope - muk * g * (numerator / denominator);
     }
 
@@ -366,255 +274,20 @@ public class PhysicsEngine
             initSpeedsDefined = true;
         }
 
-        if(solver == 0) stateVector = updateVectorEuler(stateVector);
-        else if(solver == 1) RK2();
-        else if(solver == 2) RK4();
+        if(solver < solvers.size() && solver >= 0) solvers.get(solver).nextStep(stateVector);
         else throw new IllegalArgumentException("Nonexistent solver!");
     }
 
-    /**
-     * The Runge-Kutta 2nd order method.
-     */
-    private void RK2()
-    {
-        double fx = getAccel(true,false,stateVector);
-        double fy = getAccel(false,true,stateVector);
-
-        double[] newStateVector = new double[4];
-
-        newStateVector[0] = stateVector[0] + (2 * h) / 3 * stateVector[2];
-        newStateVector[1] = stateVector[1] + (2 * h) / 3 * stateVector[3];
-        newStateVector[2] = stateVector[2] + (2 * h) / 3 * fx;
-        newStateVector[3] = stateVector[3] + (2 * h) / 3 * fy;
-
-        double newfx = getAccel(true, false, newStateVector);
-        double newfy = getAccel(false, true, newStateVector);
-
-        stateVector[0] += 0.25 * h * (stateVector[2] + 3 * newStateVector[2]);
-        stateVector[1] += 0.25 * h * (stateVector[3] + 3 * newStateVector[3]);
-        stateVector[2] += 0.25 * h * (fx + 3 * newfx);
-        stateVector[3] += 0.25 * h * (fy + 3 * newfy);
-    }
 
     /**
-     * This is the Runge-Kutta 4th order method.  It is used to handle the bulk of the physics for the game.
+     * Uses the equation of a circle to check whether the ball is inside the hole
+     * @param x is the current x position
+     * @param y is the current y position
+     * @return true if the ball is in the hole
      */
-    private void RK4()
+    public boolean inHole(double x, double y)
     {
-        double[][] k = new double[4][4];
-
-        k[0][0] = h * stateVector[2];
-        k[1][0] = h * stateVector[3];
-        k[2][0] = h * getAccel(true,false,stateVector);
-        k[3][0] = h * getAccel(false,true,stateVector);
-
-        double[] newStateVector = new double[4];
-        for(int i = 0; i < 4; i++)
-        {
-            newStateVector[i] = stateVector[i] + 0.5 * k[i][0];
-        }
-
-        k[0][1] = h * newStateVector[2];
-        k[1][1] = h * newStateVector[3];
-        k[2][1] = h * getAccel(true,false,newStateVector);
-        k[3][1] = h * getAccel(false,true,newStateVector);
-
-        for(int i = 0; i < 4; i++)
-        {
-            newStateVector[i] = stateVector[i] + 0.5 * k[i][1]; // maybe newStateVector[i] + 0.5 * k[i][1]?
-        }
-
-        k[0][2] = h * newStateVector[2];
-        k[1][2] = h * newStateVector[3];
-        k[2][2] = h * getAccel(true,false,newStateVector);
-        k[3][2] = h * getAccel(false,true,newStateVector);
-
-        for(int i = 0; i < 4; i++)
-        {
-            newStateVector[i] = stateVector[i] + k[i][2];
-        }
-
-        k[0][3] = h * newStateVector[2];
-        k[1][3] = h * newStateVector[3];
-        k[2][3] = h * getAccel(true,false,newStateVector);
-        k[3][3] = h * getAccel(false,true,newStateVector);
-
-        for(int i = 0; i < 4; i++)
-        {
-            //System.out.println(stateVector[i] + " + " + (k[i][0] + 2 * k[i][1] + 2 * k[i][2] + k[i][3]) / 6);
-            /*for(int j = 0; j < 4; j++)
-            {
-                System.out.println(j + " " + k[i][j]);
-            }*/
-            stateVector[i] += (k[i][0] + 2 * k[i][1] + 2 * k[i][2] + k[i][3]) / 6;
-        }
-    }
-
-    /**
-     * A simple rule based bot that iterates over all of the possible solutions based on the radius.
-     * @param solver is the desired solver.  0 is Euler's method, 1 is RK2, 2 is RK4
-     * @return the speeds the bot found that make the ball hit the hole
-     */
-    public double[] ruleBasedBot(int solver)
-    {
-        int iterationNumber = 0;
-        for(double ySpeed = -5; ySpeed < 5; ySpeed = ySpeed + 0.5 * targetRadius)
-        {
-            System.out.println("Trying new Y speed!!!!!!!!!!!");
-            for(double xSpeed = -5; xSpeed < 5; xSpeed = xSpeed + 0.5 * targetRadius)
-            {
-                iterationNumber++;
-                System.out.println("Trying new X speed!");
-                stateVector[0] = firstX;
-                stateVector[1] = firstY;
-                stateVector[2] = xSpeed;
-                stateVector[3] = ySpeed;
-                System.out.println("X speed: " + xSpeed);
-                System.out.println("Y speed: " + ySpeed);
-                while(stateVector[2] != 0 || stateVector[3] != 0)
-                {
-                    runSimulation(xSpeed,ySpeed,solver);
-                    //System.out.println(stateVector[2] + " " + stateVector[3]);
-                    if(inHole(stateVector[0],stateVector[1]))
-                    {
-                        System.out.println("Finding the speed took " + iterationNumber + " iterations");
-                        return new double[]{xSpeed,ySpeed};
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * A more intelligent bot.  Tries shooting 3 shots from a random position, takes the best one and in this way it climbs its local hill.  If the hill is better than the current
-     * best located hill, then that is the new best located hill, and the speeds are randomly generated to try a different hill that could lead to the global solution.
-     * @param solver is the desired solver.  0 is Euler's method, 1 is RK2, 2 is RK4
-     * @return the speeds the AI found
-     */
-    public double[] hillClimbing(int solver)
-    {
-        double[] bestSpeeds = new double[2];
-        Random random = new Random(System.currentTimeMillis());
-        double xSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 5;
-        double ySpeed = (random.nextInt(2) - 1) * random.nextDouble() * 5;
-        System.out.println("Initial speeds are: " + xSpeed + " " + ySpeed);
-        double currBest = Integer.MAX_VALUE;
-        double localBest = Integer.MAX_VALUE;
-        double[] bestPos = new double[2];
-        double[] localPos = takeShot(new double[]{xSpeed,ySpeed},solver);
-        int prevIndex = -1;
-        int iterationNumber = 0;
-
-
-        //used to find the current speed using random values
-        if(inHole(bestPos[0],bestPos[1]))
-        {
-            return bestSpeeds;
-        }
-        while(!inHole(bestPos[0],bestPos[1]))
-        {
-            iterationNumber++;
-            assert localPos != null;
-            double euclideanDistance = distanceFromGoal(localPos);
-
-            double spread = 2;
-            //left and right speeds (the current speed is change by a bit in both directions) are evaluated and the better one is chosen
-            double[] rightSpeed = {xSpeed - spread * targetRadius * euclideanDistance, ySpeed + spread * targetRadius * euclideanDistance};
-            double[] leftSpeed = {xSpeed + spread * targetRadius * euclideanDistance, ySpeed - spread * targetRadius * euclideanDistance};
-            double[] strongerSpeed = {xSpeed + spread * targetRadius * euclideanDistance, ySpeed + spread * targetRadius * euclideanDistance};
-
-            //order is very important, keep shots in order left -> center -> right with respective indices 0, 1, 2 or any multiple of those
-            double[][] speeds = {leftSpeed,strongerSpeed,rightSpeed};
-
-            double[] centerShot = takeShot(strongerSpeed, solver);
-            if(centerShot == null)
-            {
-                System.out.println("Finding the speeds took " + iterationNumber + " iterations");
-                return strongerSpeed;
-            }
-
-            double[] rightShot = takeShot(rightSpeed, solver);
-            if(rightShot == null)
-            {
-                System.out.println("Finding the speeds took " + iterationNumber + " iterations");
-                return rightSpeed;
-            }
-
-            double[] leftShot = takeShot(leftSpeed, solver);
-            if(leftShot == null)
-            {
-                System.out.println("Finding the speeds took " + iterationNumber + " iterations");
-                return leftSpeed;
-            }
-
-            double[][] shotsTaken = {leftShot,centerShot,rightShot};
-
-            double min = Integer.MAX_VALUE;
-            int index = -1;
-            double[] distancesFromGoal = {distanceFromGoal(leftShot),distanceFromGoal(centerShot),distanceFromGoal(rightShot)};
-            for(int i = 0; i < 3; i++)
-            {
-                if(distancesFromGoal[i] < min)
-                {
-                    min = distancesFromGoal[i];
-                    index = i;
-                }
-            }
-
-            if(min < localBest)
-            {
-                //while climbing the local slope, set local best to new best, change speeds to new best and position to new best
-                System.out.println("local hill climbing");
-                prevIndex = index;
-                localBest = min;
-                xSpeed = speeds[index][0];
-                ySpeed = speeds[index][1];
-                localPos = shotsTaken[index];
-            }
-            else if(localBest < currBest)
-            {
-                //if local peak has been reached, check if the local peak is indeed better than the current located global peak
-                System.out.println("Improvement!  New best position!");
-                System.out.println(localBest);
-                currBest = localBest;
-                bestSpeeds[0] = xSpeed;
-                bestSpeeds[1] = ySpeed;
-                System.out.println("Best speeds are " + bestSpeeds[0] + " " + bestSpeeds[1]);
-                bestPos = shotsTaken[prevIndex];
-                System.out.println("euclidean is " + distanceFromGoal(bestPos));
-                System.out.println("Best positions are " + bestPos[0] + " " + bestPos[1]);
-            }
-            else
-            {
-                //otherwise, attempt to shotgun out of local zone
-                System.out.println("Shotgun!");
-                localBest = Integer.MAX_VALUE;
-
-                xSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 5;
-                ySpeed = (random.nextInt(2) - 1) * random.nextDouble() * 5;
-
-                localPos = takeShot(new double[]{xSpeed,ySpeed},solver);
-                if(localPos == null)
-                {
-                    System.out.println("Finding the speeds took " + iterationNumber + " iterations");
-                    return new double[]{xSpeed,ySpeed};
-                }
-            }
-
-        }
-        System.out.println("Finding the speeds took " + iterationNumber + " iterations");
-        return bestSpeeds;
-    }
-
-    /**
-     * Subtracts vectors from each other and calculated the euclidean distance.
-     * @param vector is the vector whose distance from the goal is desired
-     * @return the euclidean distance from the goal
-     */
-    private double distanceFromGoal(double[] vector)
-    {
-        return calculateEuclidean(targetX - vector[0],targetY - vector[1]);
+        return (Math.pow(x - targetX,2) + Math.pow(y - targetY,2)) <= Math.pow(targetRadius,2);
     }
 
     /**
@@ -623,7 +296,7 @@ public class PhysicsEngine
      * @param solver is the desired solver.  0 is Euler's method, 1 is RK2, 2 is RK4
      * @return
      */
-    private double[] takeShot(double[] speed, int solver)
+    public double[] takeShot(double firstX, double firstY, double[] speed, int solver)
     {
         stateVector[0] = firstX;
         stateVector[1] = firstY;
@@ -639,18 +312,6 @@ public class PhysicsEngine
         }
         return new double[]{stateVector[0],stateVector[1]};
     }
-
-    /**
-     * Calculates the euclidean distance from 2 variables
-     * @param x is the first variable
-     * @param y is the second variable
-     * @return the euclidean distance
-     */
-    private double calculateEuclidean(double x, double y)
-    {
-        return Math.sqrt(x * x + y * y);
-    }
-
 
     private boolean touchesWallDown(double x, double y)
     {
@@ -688,17 +349,6 @@ public class PhysicsEngine
     }
 
     /**
-     * Uses the equation of a circle to check whether the ball is inside the hole
-     * @param x is the current x position
-     * @param y is the current y position
-     * @return true if the ball is in the hole
-     */
-    private boolean inHole(double x, double y)
-    {
-        return (Math.pow(x - targetX,2) + Math.pow(y - targetY,2)) <= Math.pow(targetRadius,2);
-    }
-
-    /**
      * A simple abstraction for whether the ball is in the water.
      * @param x is the current x position
      * @param y is the current y position
@@ -706,12 +356,13 @@ public class PhysicsEngine
      */
     private boolean inWater(double x, double y)
     {
-        return function(x,y) < 0;
+        return heightProfile.evaluate(x,y) < 0;
     }
 
     public static void main(String[] args)
     {
-        PhysicsEngine test = new PhysicsEngine("src\\example_inputfile.txt");
+        PhysicsEngine test = getPhysicsEngine("-1", "-0.5", "4", "1", "0.1", "0.1", "0.2", "( e ^ ( ( -1 * ( ( x ^ 2 ) + ( y ^ 2 ) ) ) / 40 ) )");
+
         /*double[] speeds = test.ruleBasedBot(2);
         if(speeds != null)
         {
@@ -720,11 +371,16 @@ public class PhysicsEngine
             System.out.println(speeds[1]);
         }
         else System.out.println("No speeds found!");*/
-        double[] speedsHillClimbing = test.hillClimbing(2);
+        /*double[] speedsHillClimbing = test.hillClimbing(2);
+        System.out.println(speedsHillClimbing[0]);
+        System.out.println(speedsHillClimbing[1]);*/
+
+        AI bots = new AI();
+        double[] speedsHillClimbing = bots.hillClimbing(2);
         System.out.println(speedsHillClimbing[0]);
         System.out.println(speedsHillClimbing[1]);
 
-        /*int count = 0;
+        int count = 0;
         while(true)
         {
             if(count % 1000000 == 0)
@@ -735,8 +391,7 @@ public class PhysicsEngine
                 System.out.println(test.stateVector[2]);
                 System.out.println(test.stateVector[3]);
             }
-            if(test.targetX - test.targetRadius < test.stateVector[0] && test.stateVector[0] < test.targetX + test.targetRadius && test.targetY - test.targetRadius < test.stateVector[1] && test.stateVector[1] < test.targetY + test.targetRadius) break;
-            test.runSimulation(3,0,0);
+            test.runSimulation(3,0,2);
             if(test.stateVector[2] == 0 && test.stateVector[3] == 0)
             {
                 System.out.println("Required " + count + " calculations");
@@ -748,6 +403,6 @@ public class PhysicsEngine
                 break;
             }
             count++;
-        }*/
+        }
     }
 }
