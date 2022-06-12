@@ -14,7 +14,7 @@ public class Function
     {
         Stack<String> ops = new Stack<>();
         Stack<Double> vals = new Stack<>();
-        for(int i = 0; i < function.length; i++)//I changed i to 0
+        for(int i = 2; i < function.length; i++)
         {
             String curr = function[i];
             if(curr.equals("("));
