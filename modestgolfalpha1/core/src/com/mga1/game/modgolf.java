@@ -40,7 +40,8 @@ import com.badlogic.gdx.Input.Keys;
 public class modgolf extends Game{
 
 	//phys
-	public PhysicsEngine phys = new PhysicsEngine("modestgolfalpha1\\core\\src\\com\\mga1\\game\\example_inputfile.txt");
+	public PhysicsEngine phys;
+
 
 	//camera
 	public PerspectiveCamera cam;
@@ -69,14 +70,35 @@ public class modgolf extends Game{
 
 	//states
 	public boolean loading;
+	//constants for screen changing
+	public final int MENU = 0;
+	public final int APPLICATION = 1;
+
+	//screens
+	
+	private MenuScreen menuScreen;
+	private MainScreen mainScreen;
 
 
-
+	public void changeScreen(int screen){
+		switch(screen){
+			case MENU:
+				if(menuScreen == null) menuScreen = new MenuScreen(this);
+					this.setScreen(menuScreen);
+				break;
+			case APPLICATION:
+			if(menuScreen == null) mainScreen = new MainScreen(this);
+			    this.setScreen(mainScreen);
+			    createEnvironment();
+				break;
+		}
+	}
 	public Model createstuff(){
 
 
-		phys = new PhysicsEngine("modestgolfalpha1\\core\\src\\com\\mga1\\game\\example_inputfile.txt");
-
+		phys = PhysicsEngine.getPhysicsEngine(menuScreen.getX0(), menuScreen.getY0(), menuScreen.getxT(), menuScreen.getyT(), menuScreen.getRadius(), menuScreen.getMuk(), menuScreen.getMus(), menuScreen.getHeightProfile());
+		//phys = new PhysicsEngine("modestgolfalpha1\\core\\src\\com\\mga1\\game\\example_inputfile.txt");
+		//phys = new PhysicsEngine1("modestgolfalpha1\\core\\src\\com\\mga1\\game\\example_inputfile.txt");
 		grass = new Material();
 		grass.set(new TextureAttribute(TextureAttribute.Diffuse, new Texture(Gdx.files.internal("modestgolfalpha1\\Textures\\grass texture.png"))));
 
@@ -92,14 +114,15 @@ public class modgolf extends Game{
 
 		for(int x = 0; x < divisions -1;  x++){
 			for(int y = 0; y < divisions -1; y++) {
+				
 
-				VertexInfo v00 = new VertexInfo().set(new Vector3((x * (view)-100), (float)phys.function(x* (view)-100,y* (view)-100), y * -view+100), null, null, new Vector2(0,0));
+				VertexInfo v00 = new VertexInfo().set(new Vector3((x * (view)-100), (float)phys.getHeightProfile().evaluate(x* (view)-100,y* (view)-100), y * -view+100), null, null, new Vector2(0,0));
 
-VertexInfo v10 = new VertexInfo().set(new Vector3((x+1) * view-100, (float)phys.function((x+1)* (view)-100,y* (view)-100), y * -view+100), null, null, new Vector2(1,0));
+				VertexInfo v10 = new VertexInfo().set(new Vector3((x+1) * view-100, (float)phys.getHeightProfile().evaluate((x+1)* (view)-100,y* (view)-100), y * -view+100), null, null, new Vector2(1,0));
 
-VertexInfo v11 = new VertexInfo().set(new Vector3((x+1) * view-100, (float)phys.function((x+1)* (view)-100,(y+1)* (view)-100), (y+1) * -view+100), null, null, new Vector2(1,1));
+			    VertexInfo v11 = new VertexInfo().set(new Vector3((x+1) * view-100, (float)phys.getHeightProfile().evaluate((x+1)* (view)-100,(y+1)* (view)-100), (y+1) * -view+100), null, null, new Vector2(1,1));
 
-VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view))-100, (float)phys.function(x* (view)-100,(y+1)* (view)-100), (y+1) * -view+100), null, null, new Vector2(0,1));
+                VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view))-100, (float)phys.getHeightProfile().evaluate(x* (view)-100,(y+1)* (view)-100), (y+1) * -view+100), null, null, new Vector2(0,1));
 
 
 				
@@ -126,9 +149,13 @@ VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view))-100, (float)phys.
 
 	@Override
 	public void create () {
+		menuScreen = new MenuScreen(this);
+		setScreen(menuScreen);
 
-	
-
+		
+	}
+	public void createEnvironment()
+	{
 		Material grass2 = new Material();
 		grass2.set(new TextureAttribute(TextureAttribute.Diffuse, new Texture(Gdx.files.internal("modestgolfalpha1\\Textures\\grass texture.png"))));
 		bbuilder = new ModelBuilder();
@@ -156,10 +183,11 @@ VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view))-100, (float)phys.
 		ModelInstance penaltygrass = new ModelInstance(grassp,128, -8, 128);
 		golfbol = new ModelInstance(golfball, 0, 0, 0);
 		ModelInstance skybox = new ModelInstance(sky);
-		ModelInstance wallInstance = new ModelInstance(wall, (float)phys.x1Wall + 64, (float)(phys.function(phys.x1Wall, phys.y1Wall)) - 4, (float)(phys.y1Wall) + 190);
+		
+		ModelInstance wallInstance = new ModelInstance(wall, (float)phys.x1Wall + 64, (float)(phys.getHeightProfile().evaluate(phys.x1Wall, phys.y1Wall)) - 4, (float)(phys.y1Wall) + 190);
 		ModelInstance ground = new ModelInstance(testfloor,65,0,193);	
 		ModelInstance skybox2 = new ModelInstance(skyfix);
-		ModelInstance flag = new ModelInstance(flagpole, (float)phys.targetX+64,(float)(phys.function(phys.targetX,phys.targetY))-4,(float)(phys.targetY)+190);
+		ModelInstance flag = new ModelInstance(flagpole, (float)phys.targetX+64,(float)(phys.getHeightProfile().evaluate(phys.targetX,phys.targetY))-4,(float)(phys.targetY)+190);
 		putt = new ModelInstance(putter,5,0,0);
 		ModelInstance ball = new ModelInstance(skyball,0,0,0);
 
@@ -196,8 +224,9 @@ VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view))-100, (float)phys.
 // GUI models are not correct to scale for what the input file says just look at the command terminal not GUI 
 	@Override
 	public void render () {
-		
-		camController.update();
+		super.render();
+		if (this.getScreen() == mainScreen) {
+			camController.update();
 
 		Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
@@ -217,7 +246,8 @@ VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view))-100, (float)phys.
 					cam.lookAt(golfbol.transform.getTranslation(new Vector3()));
 					cam.update();
 					System.out.println("XPOS: " + phys.stateVector[0] + " YPOS: " + phys.stateVector[1]);
-					System.out.println("Height: " + phys.function(phys.stateVector[0], phys.stateVector[1]));
+					
+					System.out.println("Height: " + phys.getHeightProfile().evaluate(phys.stateVector[0], phys.stateVector[1]));
 					int i = 0;
 					while(i < 1000){
 					phys.runSimulation(3, 0, 2);
@@ -235,13 +265,15 @@ VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view))-100, (float)phys.
 
 				}
 		modelBatch.end();
+		}
 	}
 
 	public void moveBall(float x, float y){
 
 		float nx = (float)x;
 		float nz = (float)y;
-		float ny = (float)(phys.function(phys.stateVector[0],phys.stateVector[1]))+1.3f;
+		
+		float ny = (float)(phys.getHeightProfile().evaluate(phys.stateVector[0],phys.stateVector[1]))+1.3f;
 		golfbol.transform.setToTranslation(x+64, ny, -(y-192));
 		putt.transform.setToTranslation(x+64,ny,-(y-192));
 
@@ -256,7 +288,9 @@ VertexInfo v01 = new VertexInfo().set(new Vector3((x * (view))-100, (float)phys.
 	@Override
 	public void dispose () {
 
-		modelBatch.dispose();
+		if (modelBatch != null) {
+			modelBatch.dispose();
+		}
 	}
 
 	public void resume () {
