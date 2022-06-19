@@ -8,18 +8,20 @@ public class PhysicsEngine
 {
     private boolean hasSand = false;
     public double firstX, firstY, targetX, targetY, targetRadius, x1Wall, x2Wall, y1Wall, y2Wall, sandX1, sandX2, sandY1, sandY2, grassKinetic, grassStatic, sandKinetic, sandStatic;
-    private Function heightProfile;
-    public final double h = 0.01;
+    public Function heightProfile;
+    public final double h = 0.0001;
+    private final double g = 9.81;
     public double[] stateVector = new double[4];
+    // stateVector[0] is the current x position
+    // stateVector[1] is the current y position
+    // stateVector[2] is the current x speed
+    // stateVector[3] is the current y speed
+
     private boolean initSpeedsDefined = false;
     private static PhysicsEngine physicsEngine;
     private static final ArrayList<Solver> solvers = new ArrayList<>();
-    public Function getHeightProfile() {
-        return heightProfile;
-    }
     private PhysicsEngine(String filename)
     {
-        
         try
         {
             FileReader fr = new FileReader(filename);
@@ -52,7 +54,7 @@ public class PhysicsEngine
                 }
                 else if(lineIndex == 3)
                 {
-                    heightProfile = new Function(line);
+                    heightProfile = new Function(line.split("= ")[1]);
                     //getHeight(heightProfile,firstX,firstY);
                 }
                 else if(lineIndex == 4)
@@ -85,19 +87,6 @@ public class PhysicsEngine
         {
             System.out.println("I/O exception");
         }
-        
-    }
-    private PhysicsEngine(String x0, String y0, String xT, String yT, String radius, String muk, String mus, String heightProfile)
-    {
-        firstX = Double.parseDouble(x0);
-        firstY = Double.parseDouble(y0);
-        targetX = Double.parseDouble(xT);
-        targetY = Double.parseDouble(yT);
-        targetRadius = Double.parseDouble(radius);
-        grassKinetic = Double.parseDouble(muk);
-        grassStatic = Double.parseDouble(mus);
-        this.heightProfile = new Function(heightProfile);
-        
     }
 
     private static void initSolvers()
@@ -107,18 +96,14 @@ public class PhysicsEngine
         solvers.add(new RungeKutta4());
     }
 
-    public static PhysicsEngine getPhysicsEngine(String x0, String y0, String xT, String yT, String radius, String muk, String mus, String heightProfile)
+    public static PhysicsEngine getPhysicsEngine()
     {
         if(physicsEngine == null)
         {
-            physicsEngine = new PhysicsEngine(x0, y0, xT, yT, radius, muk, mus, heightProfile);
+            physicsEngine = new PhysicsEngine("core\\src\\com\\mga1\\game\\example_inputfile.txt");
             initSolvers();
         }
 
-        return physicsEngine;
-    }
-    public static PhysicsEngine getPhysicsEngine()
-    {
         return physicsEngine;
     }
 
@@ -149,9 +134,9 @@ public class PhysicsEngine
         double kineticCoeff = hasSand && sandX1 < xCoor && xCoor < sandX2 && sandY1 < yCoor && yCoor < sandY2 ? sandKinetic : grassKinetic;
         double acceleration = 0;
         double pythagoreanSpeed = xSpeed * xSpeed + ySpeed * ySpeed;
-        double pythagoreanSlope = slopeX * slopeX + slopeY * slopeY;
-        double denominator = Math.sqrt(pythagoreanSpeed);
-        double denominator2 = Math.sqrt(pythagoreanSlope);
+        double denominator2ZeroSpeed = Math.sqrt(slopeX * slopeX + slopeY * slopeY);
+        double mainDenominator1 = 1 + Math.pow(slopeX,2) + Math.pow(slopeY,2);
+        double mainDenominator2 = Math.sqrt(pythagoreanSpeed + Math.pow((slopeX * xSpeed + slopeY * ySpeed),2));
 
         if(x && !y)
         {
@@ -166,7 +151,8 @@ public class PhysicsEngine
 
         if(minimumSpeed(pythagoreanSpeed) && (slopeX != 0 || slopeY != 0) && !atRest(xCoor,yCoor))
         {
-            acceleration = calcAccel(mainSlope,kineticCoeff,mainSlope,denominator2);
+            acceleration = calcAccelZeroSpeed(mainSlope,kineticCoeff,mainDenominator1,denominator2ZeroSpeed);
+            //acceleration = calcAccelOld(mainSlope,kineticCoeff,mainSlope,denominator2ZeroSpeed);
         }
         else if(inPit(pythagoreanSpeed,slopeX,slopeY))
         {
@@ -199,10 +185,36 @@ public class PhysicsEngine
         }
         else
         {
-            acceleration = calcAccel(mainSlope,kineticCoeff,mainSpeed,denominator);
+            acceleration = calcAccel(mainSlope,kineticCoeff,mainSpeed,mainDenominator1,mainDenominator2);
+            //acceleration = calcAccelOld(mainSlope,kineticCoeff,mainSpeed,Math.sqrt(pythagoreanSpeed));
         }
 
         return acceleration;
+    }
+
+
+    /**
+     * The acceleration equation
+     * @param mainSlope is the slope that will be used in the numerators
+     * @param muk is the kinetic coefficient
+     * @param numerator is velocity or the slope (depends on if speed is 0)
+     * @param denominator1 is 1 + slopex^2 + slopey^2
+     * @param denominator2 is vx^2 + vy^2 + (slopexvx + slopeyvy)^2
+     * @return the acceleration
+     */
+    private double calcAccel(double mainSlope, double muk, double numerator, double denominator1, double denominator2)
+    {
+        return -1 * ((g * mainSlope) / denominator1) - ((muk * g * numerator) / (Math.sqrt(denominator1) * denominator2));
+    }
+
+    private double calcAccelOld(double mainSlope, double muk, double mainSpeed, double denominator)
+    {
+        return (-1 * g * mainSlope) - ((muk * g * mainSpeed) / denominator);
+    }
+
+    private double calcAccelZeroSpeed(double mainSlope, double muk, double denominator1, double denominator2)
+    {
+        return -1 * ((g * mainSlope) / denominator1) - (muk * g * (mainSlope / (denominator2)));
     }
 
     /**
@@ -223,7 +235,7 @@ public class PhysicsEngine
      * @param y is the current y coordinate
      * @return true if the ball will stay at rest, false if not
      */
-    public boolean atRest(double x, double y)
+    private boolean atRest(double x, double y)
     {
         double staticCoeff = hasSand && sandX1 < x && x < sandX2 && sandY1 < y && y < sandY2 ? sandStatic : grassStatic;
         double limitZero = 0.000000000001;
@@ -234,27 +246,13 @@ public class PhysicsEngine
     }
 
     /**
-     * The acceleration equation
-     * @param slope is the slope
-     * @param muk is the kinetic coefficient
-     * @param numerator is velocity or the slope (depends on if speed is 0)
-     * @param denominator is the euclidean distance of the slopes or speeds
-     * @return the acceleration
-     */
-    public double calcAccel(double slope, double muk, double numerator, double denominator)
-    {
-        double g = 9.81;
-        return -g * slope - muk * g * (numerator / denominator);
-    }
-
-    /**
      * This method defines the minimum cutoff speed
      * @param speed is speed that needs to be checked
      * @return true if the speed is less than the threshold
      */
-    public boolean minimumSpeed(double speed)
+    private boolean minimumSpeed(double speed)
     {
-        return Math.abs(speed) < 0.01;
+        return Math.abs(speed) < 0.0001;
     }
 
     /**
@@ -294,15 +292,15 @@ public class PhysicsEngine
      * Simulates taking a shot.  Returns null if the ball hits the hole during the shot
      * @param speed defines the initial speeds
      * @param solver is the desired solver.  0 is Euler's method, 1 is RK2, 2 is RK4
-     * @return
+     * @return the position of the ball after taking the shot (if the ball hits water, the ball stops there)
      */
     public double[] takeShot(double firstX, double firstY, double[] speed, int solver)
     {
         stateVector[0] = firstX;
         stateVector[1] = firstY;
-        stateVector[2] = speed[0];
-        stateVector[3] = speed[1];
-        while(stateVector[2] != 0 || stateVector[3] != 0)
+        stateVector[3] = speed[0];
+        stateVector[4] = speed[1];
+        while(stateVector[3] != 0 || stateVector[4] != 0)
         {
             if(inHole(stateVector[0],stateVector[1]))
             {
@@ -359,9 +357,31 @@ public class PhysicsEngine
         return heightProfile.evaluate(x,y) < 0;
     }
 
+    public void printStateVector(int choice, boolean all)
+    {
+        if(all)
+        {
+            System.out.println("Current state: ");
+            System.out.println("x:  " + stateVector[0]);
+            System.out.println("y:  " + stateVector[1]);
+            System.out.println("vx: " + stateVector[2]);
+            System.out.println("vy: " + stateVector[3]);
+        }
+        else
+        {
+            System.out.println(stateVector[choice]);
+        }
+    }
+
+    public static boolean withinBounds(double number, double bound)
+    {
+        double epsilon = 0.01;
+        return number > bound - epsilon && number < bound + epsilon;
+    }
+
     public static void main(String[] args)
     {
-        PhysicsEngine test = getPhysicsEngine("-1", "-0.5", "4", "1", "0.1", "0.1", "0.2", "( e ^ ( ( -1 * ( ( x ^ 2 ) + ( y ^ 2 ) ) ) / 40 ) )");
+        PhysicsEngine test = getPhysicsEngine();
 
         /*double[] speeds = test.ruleBasedBot(2);
         if(speeds != null)
@@ -375,31 +395,34 @@ public class PhysicsEngine
         System.out.println(speedsHillClimbing[0]);
         System.out.println(speedsHillClimbing[1]);*/
 
-        AI bots = new AI();
+        /*AI bots = new AI();
         double[] speedsHillClimbing = bots.hillClimbing(2);
         System.out.println(speedsHillClimbing[0]);
-        System.out.println(speedsHillClimbing[1]);
+        System.out.println(speedsHillClimbing[1]);*/
 
+        double bound = 1;
         int count = 0;
+        double sumXSpeed = 0;
+        double sumYSpeed = 0;
+        int speedsCount = 0;
         while(true)
         {
-            if(count % 1000000 == 0)
+            //if(withinBounds(test.stateVector[0],1) && withinBounds(test.stateVector[1],1))
+            if(test.stateVector[0] > 1 && test.stateVector[1] > 1)
             {
-                System.out.println("One step: ");
-                System.out.println(test.stateVector[0]);
-                System.out.println(test.stateVector[1]);
-                System.out.println(test.stateVector[2]);
-                System.out.println(test.stateVector[3]);
+                test.printStateVector(2,false);
+                //sumXSpeed += Math.abs(test.stateVector[2]);
+                //sumYSpeed += Math.abs(test.stateVector[3]);
+                //speedsCount++;
             }
-            test.runSimulation(3,0,2);
+            test.runSimulation(2,2,2);
             if(test.stateVector[2] == 0 && test.stateVector[3] == 0)
             {
+                //System.out.println("Average x speed: " + (sumXSpeed / speedsCount));
+                //System.out.println("Average y speed: " + (sumYSpeed / speedsCount));
                 System.out.println("Required " + count + " calculations");
-                System.out.println("Final step: ");
-                System.out.println(test.stateVector[0]);
-                System.out.println(test.stateVector[1]);
-                System.out.println(test.stateVector[2]);
-                System.out.println(test.stateVector[3]);
+                System.out.println("Final position: ");
+                test.printStateVector(0,true);
                 break;
             }
             count++;
