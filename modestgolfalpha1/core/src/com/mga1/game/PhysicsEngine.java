@@ -88,6 +88,18 @@ public class PhysicsEngine
             System.out.println("I/O exception");
         }
     }
+     private PhysicsEngine(String x0, String y0, String xT, String yT, String radius, String muk, String mus, String heightProfile)
+    {
+        firstX = Double.parseDouble(x0);
+        firstY = Double.parseDouble(y0);
+        targetX = Double.parseDouble(xT);
+        targetY = Double.parseDouble(yT);
+        targetRadius = Double.parseDouble(radius);
+        grassKinetic = Double.parseDouble(muk);
+        grassStatic = Double.parseDouble(mus);
+        this.heightProfile = new Function(heightProfile);
+        
+    }
 
     private static void initSolvers()
     {
@@ -101,6 +113,17 @@ public class PhysicsEngine
         if(physicsEngine == null)
         {
             physicsEngine = new PhysicsEngine("core\\src\\com\\mga1\\game\\example_inputfile.txt");
+            initSolvers();
+        }
+
+        return physicsEngine;
+    }
+    
+    public static PhysicsEngine getPhysicsEngine(String x0, String y0, String xT, String yT, String radius, String muk, String mus, String heightProfile)
+    {
+        if(physicsEngine == null)
+        {
+            physicsEngine = new PhysicsEngine(x0, y0, xT, yT, radius, muk, mus, heightProfile);
             initSolvers();
         }
 
