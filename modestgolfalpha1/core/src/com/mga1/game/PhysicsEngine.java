@@ -129,6 +129,9 @@ public class PhysicsEngine
 
         return physicsEngine;
     }
+    public Function getHeightProfile() {
+        return heightProfile;
+    }
 
     /**
      * Used to get the acceleration of the ball at the current point, so that it can be used to increment the state vector.  It uses the current state vector.
