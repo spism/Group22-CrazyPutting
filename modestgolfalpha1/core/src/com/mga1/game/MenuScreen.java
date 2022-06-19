@@ -163,7 +163,7 @@ public class MenuScreen implements Screen{
                 muk = arr6[arr6.length - 1];
                 String[] arr7 = fieldMus.getText().split(" ");
                 mus = arr7[arr7.length - 1];
-                heightProfile = fieldHeightProfile.getText().substring(4);
+                heightProfile = fieldHeightProfile.getText().split("= ")[1];
                 
                 
                 game.changeScreen(game.APPLICATION);
