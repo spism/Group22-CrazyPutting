@@ -5,9 +5,11 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
@@ -23,6 +25,29 @@ public class MenuScreen implements Screen{
     private String muk;
     private String mus;
     private String heightProfile;
+    private String sandX;
+    private String sandY;
+    private String sandKinetic;
+    private String sandStatic;
+    private boolean hasSand;
+    ScreenViewport secondViewport;
+    
+    
+    public String getSandY() {
+        return sandY;
+    }
+    public String getSandKinetic() {
+        return sandKinetic;
+    }
+    public String getSandStatic() {
+        return sandStatic;
+    }
+    public boolean isHasSand() {
+        return hasSand;
+    }
+    public String getSandX() {
+        return sandX;
+    }
     public String getHeightProfile() {
         return heightProfile;
     }
@@ -51,8 +76,11 @@ public class MenuScreen implements Screen{
     public MenuScreen(modgolf firstGame) {
         super();
         this.game = firstGame;
-        stage = new Stage(new StretchViewport(600, 800));
+        StretchViewport firstViewport = new StretchViewport(600, 800);
+        
+        stage = new Stage(firstViewport);
         Gdx.input.setInputProcessor(stage);
+        //secondViewport = new ScreenViewport();
         stage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
         stage.draw();
     }
@@ -70,14 +98,20 @@ public class MenuScreen implements Screen{
         //TextButton preferences = new TextButton("Preferences", skin);
         TextButton exit = new TextButton("Exit", skin);
 
-        final TextField fieldX0 = new TextField("X0 = ", skin);
-        final TextField fieldY0 = new TextField("Y0 = ", skin);
-        final TextField fieldXt = new TextField("Xt = ", skin);
-        final TextField fieldYt = new TextField("Yt = ", skin);
-        final TextField fieldRadius = new TextField("Radius = ", skin);
-        final TextField fieldMuk = new TextField("Muk = ", skin);
-        final TextField fieldMus = new TextField("Mus = ", skin);
-        final TextField fieldHeightProfile = new TextField("HeightProfile = ", skin);
+        final TextField fieldX0 = new TextField("X0 = -1", skin);
+        final TextField fieldY0 = new TextField("Y0 = -0.5", skin);
+        final TextField fieldXt = new TextField("Xt = 4", skin);
+        final TextField fieldYt = new TextField("Yt = 1", skin);
+        final TextField fieldRadius = new TextField("Radius = 0.1", skin);
+        final TextField fieldMuk = new TextField("Muk = 0.1", skin);
+        final TextField fieldMus = new TextField("Mus = 0.2", skin);
+        final TextField fieldHeightProfile = new TextField("HeightProfile = ( e ^ ( ( -1 * ( ( x ^ 2 ) + ( y ^ 2 ) ) ) / 40 ) )", skin);
+        final TextField fieldSandX = new TextField("SandXCoordintates = ", skin);
+        final TextField fieldSandY = new TextField("SandYCoordintates = ", skin);
+        final TextField fieldSandKineticAndStatic = new TextField("SandKineticAndStatic = ", skin);
+
+
+        // final ScrollPane scrollPane = new ScrollPane(table, skin);
         
         table.add(fieldX0).fillX().uniformX();
         table.row().pad(5, 0, 5, 0);
@@ -94,6 +128,12 @@ public class MenuScreen implements Screen{
         table.add(fieldMus).fillX().uniformX();
         table.row().pad(5, 0, 5, 0);
         table.add(fieldHeightProfile).fillX().uniformX();
+        table.row().pad(5, 0, 5, 0);
+        table.add(fieldSandX).fillX().uniformX();
+        table.row().pad(5, 0, 5, 0);
+        table.add(fieldSandY).fillX().uniformX();
+        table.row().pad(5, 0, 5, 0);
+        table.add(fieldSandKineticAndStatic).fillX().uniformX();
         table.row().pad(5, 0, 5, 0);
         table.add(newGame).fillX().uniformX();
         table.row().pad(5, 0, 5, 0);
@@ -124,6 +164,8 @@ public class MenuScreen implements Screen{
                 String[] arr7 = fieldMus.getText().split(" ");
                 mus = arr7[arr7.length - 1];
                 heightProfile = fieldHeightProfile.getText();
+                
+                
                 game.changeScreen(game.APPLICATION);
             }
         });
