@@ -32,6 +32,11 @@ public class MenuScreen implements Screen{
     private String sandKinetic;
     private String sandStatic;
     private boolean hasSand;
+    private boolean hasAI;
+
+    public boolean isHasAI() {
+        return hasAI;
+    }
 
     ScreenViewport secondViewport;
     
@@ -92,71 +97,10 @@ public class MenuScreen implements Screen{
         stage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
         stage.draw();
     }
-
-    @Override
-    public void show() {
-        // TODO Auto-generated method stub
-        Table table = new Table();
-        table.setFillParent(true);
-        table.setDebug(true);
-        table.center();
-        stage.addActor(table);
-        Skin skin = new Skin(Gdx.files.internal("modestgolfalpha1\\skins\\glassy\\skin\\glassy-ui.json"));
-        TextButton newGame = new TextButton("New Game", skin);
-        //TextButton preferences = new TextButton("Preferences", skin);
-        TextButton exit = new TextButton("Exit", skin);
-
-        final TextField fieldX0 = new TextField("X0 = -1", skin);
-        final TextField fieldY0 = new TextField("Y0 = -0.5", skin);
-        final TextField fieldXt = new TextField("Xt = 4", skin);
-        final TextField fieldYt = new TextField("Yt = 1", skin);
-        final TextField fieldRadius = new TextField("Radius = 0.1", skin);
-        final TextField fieldMuk = new TextField("Muk = 0.1", skin);
-        final TextField fieldMus = new TextField("Mus = 0.2", skin);
-        final TextField fieldHeightProfile = new TextField("HeightProfile = ( e ^ ( ( -1 * ( ( x ^ 2 ) + ( y ^ 2 ) ) ) / 40 ) )", skin);
-        final TextField fieldSandX = new TextField("SandXCoordintates = ", skin);
-        final TextField fieldSandY = new TextField("SandYCoordintates = ", skin);
-        final TextField fieldSandKineticAndStatic = new TextField("SandKineticAndStatic = ", skin);
-
-
-        // final ScrollPane scrollPane = new ScrollPane(table, skin);
-        
-        table.add(fieldX0).fillX().uniformX();
-        table.row().pad(5, 0, 5, 0);
-        table.add(fieldY0).fillX().uniformX();
-        table.row().pad(5, 0, 5, 0);
-        table.add(fieldXt).fillX().uniformX();
-        table.row().pad(5, 0, 5, 0);
-        table.add(fieldYt).fillX().uniformX();
-        table.row().pad(5, 0, 5, 0);
-        table.add(fieldRadius).fillX().uniformX();
-        table.row().pad(5, 0, 5, 0);
-        table.add(fieldMuk).fillX().uniformX();
-        table.row().pad(5, 0, 5, 0);
-        table.add(fieldMus).fillX().uniformX();
-        table.row().pad(5, 0, 5, 0);
-        table.add(fieldHeightProfile).fillX().uniformX();
-        table.row().pad(5, 0, 5, 0);
-        table.add(fieldSandX).fillX().uniformX();
-        table.row().pad(5, 0, 5, 0);
-        table.add(fieldSandY).fillX().uniformX();
-        table.row().pad(5, 0, 5, 0);
-        table.add(fieldSandKineticAndStatic).fillX().uniformX();
-        table.row().pad(5, 0, 5, 0);
-        table.add(newGame).fillX().uniformX();
-        table.row().pad(5, 0, 5, 0);
-        //table.add(preferences).fillX().uniformX();
-        //table.row().pad(5, 0, 5, 0);
-        table.add(exit).fillX().uniformX();
-        exit.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
-                Gdx.app.exit();				
-            }
-        });
-        newGame.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
+    private void makeChanges(final TextField fieldX0, final TextField fieldY0, final TextField fieldXt,
+                    final TextField fieldYt, final TextField fieldRadius, final TextField fieldMuk,
+                    final TextField fieldMus, final TextField fieldHeightProfile, final TextField fieldSandX,
+                    final TextField fieldSandY, final TextField fieldSandKineticAndStatic) {
                 String[] arr1 = fieldX0.getText().split(" ");
                 x0 = arr1[arr1.length - 1];
                 String[] arr2 = fieldY0.getText().split(" ");
@@ -201,6 +145,79 @@ public class MenuScreen implements Screen{
                 
                 game.changeScreen(game.APPLICATION);
             }
+
+    @Override
+    public void show() {
+        // TODO Auto-generated method stub
+        Table table = new Table();
+        table.setFillParent(true);
+        table.setDebug(true);
+        table.center();
+        stage.addActor(table);
+        Skin skin = new Skin(Gdx.files.internal("modestgolfalpha1\\skins\\glassy\\skin\\glassy-ui.json"));
+        TextButton newGame = new TextButton("New Game", skin);
+        //TextButton preferences = new TextButton("Preferences", skin);
+        TextButton ai = new TextButton("AI", skin);
+
+        final TextField fieldX0 = new TextField("X0 = -1", skin);
+        final TextField fieldY0 = new TextField("Y0 = -0.5", skin);
+        final TextField fieldXt = new TextField("Xt = 4", skin);
+        final TextField fieldYt = new TextField("Yt = 1", skin);
+        final TextField fieldRadius = new TextField("Radius = 0.1", skin);
+        final TextField fieldMuk = new TextField("Muk = 0.1", skin);
+        final TextField fieldMus = new TextField("Mus = 0.2", skin);
+        final TextField fieldHeightProfile = new TextField("HeightProfile = ( e ^ ( ( -1 * ( ( x ^ 2 ) + ( y ^ 2 ) ) ) / 40 ) )", skin);
+        final TextField fieldSandX = new TextField("SandXCoordintates = ", skin);
+        final TextField fieldSandY = new TextField("SandYCoordintates = ", skin);
+        final TextField fieldSandKineticAndStatic = new TextField("SandKineticAndStatic = ", skin);
+
+
+        // final ScrollPane scrollPane = new ScrollPane(table, skin);
+        
+        table.add(fieldX0).fillX().uniformX();
+        table.row().pad(5, 0, 5, 0);
+        table.add(fieldY0).fillX().uniformX();
+        table.row().pad(5, 0, 5, 0);
+        table.add(fieldXt).fillX().uniformX();
+        table.row().pad(5, 0, 5, 0);
+        table.add(fieldYt).fillX().uniformX();
+        table.row().pad(5, 0, 5, 0);
+        table.add(fieldRadius).fillX().uniformX();
+        table.row().pad(5, 0, 5, 0);
+        table.add(fieldMuk).fillX().uniformX();
+        table.row().pad(5, 0, 5, 0);
+        table.add(fieldMus).fillX().uniformX();
+        table.row().pad(5, 0, 5, 0);
+        table.add(fieldHeightProfile).fillX().uniformX();
+        table.row().pad(5, 0, 5, 0);
+        table.add(fieldSandX).fillX().uniformX();
+        table.row().pad(5, 0, 5, 0);
+        table.add(fieldSandY).fillX().uniformX();
+        table.row().pad(5, 0, 5, 0);
+        table.add(fieldSandKineticAndStatic).fillX().uniformX();
+        table.row().pad(5, 0, 5, 0);
+        table.add(newGame).fillX().uniformX();
+        table.row().pad(5, 0, 5, 0);
+        //table.add(preferences).fillX().uniformX();
+        //table.row().pad(5, 0, 5, 0);
+        table.add(ai).fillX().uniformX();
+        ai.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                //Gdx.app.exit();
+                makeChanges(fieldX0, fieldY0, fieldXt, fieldYt, fieldRadius, fieldMuk, fieldMus, fieldHeightProfile,
+                        fieldSandX, fieldSandY, fieldSandKineticAndStatic);	
+                hasAI = true;			
+            }
+        });
+        newGame.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                makeChanges(fieldX0, fieldY0, fieldXt, fieldYt, fieldRadius, fieldMuk, fieldMus, fieldHeightProfile,
+                        fieldSandX, fieldSandY, fieldSandKineticAndStatic);
+            }
+
+            
         });
         
     }
