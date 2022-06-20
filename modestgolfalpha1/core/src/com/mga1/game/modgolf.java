@@ -251,7 +251,7 @@ public class modgolf extends Game{
 					updateCameraInGui();
 					int i = 0;
 					while(i < 1000){
-					phys.runSimulation(phys.firstX, phys.firstY,3, 0, 2);
+					phys.runSimulation(phys.firstX, phys.firstY,3, 0, menuScreen.getSolver());
 					i = i + 1;
 					}
 					moveBall((float) phys.stateVector[0], (float) phys.stateVector[1]);
@@ -269,7 +269,7 @@ public class modgolf extends Game{
 				{
 					updateCameraInGui();
 					AI bots = new AI();
-					double[] speedsHillClimbing = bots.hillClimbing(0);
+					double[] speedsHillClimbing = bots.hillClimbing(menuScreen.getSolver());
 					System.out.println(speedsHillClimbing[0]);
 					System.out.println(speedsHillClimbing[1]);
 					//phys.runSimulation(phys.stateVector[0], phys.stateVector[1], speedsHillClimbing[0], speedsHillClimbing[1], 2);
