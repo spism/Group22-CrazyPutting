@@ -96,7 +96,13 @@ public class modgolf extends Game{
 	public Model createstuff(){
 
 
-		phys = PhysicsEngine.getPhysicsEngine(menuScreen.getX0(), menuScreen.getY0(), menuScreen.getxT(), menuScreen.getyT(), menuScreen.getRadius(), menuScreen.getMuk(), menuScreen.getMus(), menuScreen.getHeightProfile());
+		if (menuScreen.isHasSand()) {
+			phys = PhysicsEngine.getPhysicsEngine(menuScreen.getX0(), menuScreen.getY0(), menuScreen.getxT(), menuScreen.getyT(), menuScreen.getRadius(), menuScreen.getMuk(), menuScreen.getMus(), menuScreen.getHeightProfile(), menuScreen.getSandX1(), menuScreen.getSandX2(), menuScreen.getSandY1(), menuScreen.getSandY2(), menuScreen.getSandKinetic(), menuScreen.getSandStatic());
+		}
+		else{
+			phys = PhysicsEngine.getPhysicsEngine(menuScreen.getX0(), menuScreen.getY0(), menuScreen.getxT(), menuScreen.getyT(), menuScreen.getRadius(), menuScreen.getMuk(), menuScreen.getMus(), menuScreen.getHeightProfile());
+		}
+		
 		//phys = new PhysicsEngine("modestgolfalpha1\\core\\src\\com\\mga1\\game\\example_inputfile.txt");
 		//phys = new PhysicsEngine1("modestgolfalpha1\\core\\src\\com\\mga1\\game\\example_inputfile.txt");
 		grass = new Material();
@@ -250,7 +256,7 @@ public class modgolf extends Game{
 					System.out.println("Height: " + phys.getHeightProfile().evaluate(phys.stateVector[0], phys.stateVector[1]));
 					int i = 0;
 					while(i < 1000){
-					phys.runSimulation(3, 0, 2);
+					phys.runSimulation(phys.firstX, phys.firstY,3, 0, 2);
 					i = i + 1;
 					}
 					moveBall((float) phys.stateVector[0], (float) phys.stateVector[1]);
