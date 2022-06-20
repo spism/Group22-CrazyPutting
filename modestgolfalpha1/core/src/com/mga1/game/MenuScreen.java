@@ -25,16 +25,24 @@ public class MenuScreen implements Screen{
     private String muk;
     private String mus;
     private String heightProfile;
-    private String sandX;
-    private String sandY;
+    private String sandX1;
+    private String sandY1;
+    private String sandX2;
+    private String sandY2;
     private String sandKinetic;
     private String sandStatic;
     private boolean hasSand;
+
     ScreenViewport secondViewport;
     
-    
-    public String getSandY() {
-        return sandY;
+    public String getSandY2() {
+        return sandY2;
+    }
+    public String getSandX2() {
+        return sandX2;
+    }
+    public String getSandY1() {
+        return sandY1;
     }
     public String getSandKinetic() {
         return sandKinetic;
@@ -45,8 +53,8 @@ public class MenuScreen implements Screen{
     public boolean isHasSand() {
         return hasSand;
     }
-    public String getSandX() {
-        return sandX;
+    public String getSandX1() {
+        return sandX1;
     }
     public String getHeightProfile() {
         return heightProfile;
@@ -164,6 +172,31 @@ public class MenuScreen implements Screen{
                 String[] arr7 = fieldMus.getText().split(" ");
                 mus = arr7[arr7.length - 1];
                 heightProfile = fieldHeightProfile.getText().split("= ")[1];
+                String[] arr8 = fieldSandX.getText().split(" ");
+                if (arr8.length > 2) {
+                    sandX1 = arr8[2];
+                    sandX2 = arr8[6];
+                    hasSand = true;
+                }
+                else{
+                    hasSand = false;
+                }
+                String[] arr9 = fieldSandY.getText().split(" ");
+                if (arr9.length > 2) {
+                    sandY1 = arr9[2];
+                    sandY2 = arr9[6];
+                    hasSand = true;
+                }else{
+                    hasSand = false;
+                }
+                String[] arr10 = fieldSandKineticAndStatic.getText().split(" ");
+                if (arr10.length > 2) {
+                    sandKinetic = arr10[2];
+                    sandStatic = arr10[arr10.length-1];
+                    hasSand = true;
+                }else{
+                    hasSand = false;
+                }
                 
                 
                 game.changeScreen(game.APPLICATION);
