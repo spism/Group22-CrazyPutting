@@ -182,11 +182,13 @@ public class AI
 
         while(!physicsEngine.inHole(currX,currY))
         {
-            System.out.println("taking another shot...");
+            //System.out.println("Current ball position: " + currX + " " + currY);
+            //System.out.println("taking another shot...");
             double vx = (rand.nextInt(2) - 1) * rand.nextDouble() * 5; // make the random shots lean towards the goal, that should speed up by a lot
             double vy = (rand.nextInt(2) - 1) * rand.nextDouble() * 5;
             String[] shotInfo = localize(new double[]{currX,currY},new double[]{vx,vy},solver).split(" ");
             double[] localSpeeds = {Double.parseDouble(shotInfo[1]),Double.parseDouble(shotInfo[2])};
+            //System.out.println(localSpeeds[0] + " " + localSpeeds[1]);
             shotsTaken.add(localSpeeds);
             if(shotInfo[0].equals("yes"))
             {
@@ -205,18 +207,19 @@ public class AI
     {
         double xSpeed = initSpeeds[0];
         double ySpeed = initSpeeds[1];
-        double currBest = Integer.MAX_VALUE;
-        double localBest = shotScore(physicsEngine.takeShot(initPos[0],initPos[1],initSpeeds,solver),solver);
+        double currBest = shotScore(physicsEngine.takeShot(initPos[0],initPos[1],initSpeeds,solver),solver);
+        double distanceFromGoal = distanceFromGoal(initPos);
 
-        while(currBest >= localBest)
+        while(true)
         {
-            System.out.println("localizing...");
+            //System.out.println("localizing...");
 
-            double spread = 2;
+            double spread = distanceFromGoal / (4 * badShots(initPos,solver));
+
             //left and right speeds (the current speed is changed by a bit in both directions) are evaluated and the better one is chosen
-            double[] rightSpeed = {xSpeed + (sign(ySpeed) * spread * targetParameters[2] / currBest), ySpeed - (sign(xSpeed) * spread * targetParameters[2] / currBest)};
-            double[] leftSpeed = {xSpeed - (sign(ySpeed) * spread * targetParameters[2] / currBest), ySpeed + (sign(xSpeed) * spread * targetParameters[2] / currBest)};
-            double[] strongerSpeed = {xSpeed + (sign(xSpeed) * spread * targetParameters[2] / currBest), ySpeed + (sign(ySpeed) * spread * targetParameters[2] / currBest)};
+            double[] rightSpeed = {xSpeed + (sign(ySpeed) * spread * targetParameters[2]), ySpeed - (sign(xSpeed) * spread * targetParameters[2])};
+            double[] leftSpeed = {xSpeed - (sign(ySpeed) * spread * targetParameters[2]), ySpeed + (sign(xSpeed) * spread * targetParameters[2])};
+            double[] strongerSpeed = {xSpeed + (sign(xSpeed) * spread * targetParameters[2]), ySpeed + (sign(ySpeed) * spread * targetParameters[2])};
 
             //order is very important, keep shots in order left -> center -> right with respective indices 0, 1, 2 or any multiple of those
             double[][] speeds = {leftSpeed,strongerSpeed,rightSpeed};
@@ -244,6 +247,7 @@ public class AI
             double[] shotScores = {shotScore(leftShot,solver),shotScore(strongerShot,solver),shotScore(rightShot,solver)};
             for(int i = 0; i < 3; i++)
             {
+                //System.out.println(shotScores[i]);
                 if(shotScores[i] < min)
                 {
                     min = shotScores[i];
@@ -256,23 +260,43 @@ public class AI
                 currBest = min;
                 xSpeed = speeds[index][0];
                 ySpeed = speeds[index][1];
-                System.out.println("Speeds found: " + xSpeed + " " + ySpeed);
+                //System.out.println("Speeds found: " + xSpeed + " " + ySpeed);
             }
-            else break;
+            else
+            {
+                //System.out.println("no improvement found");
+                break;
+            }
         }
         return "no " + xSpeed + " " + ySpeed;
     }
 
     private double shotScore(double[] endPos, int solver)
     {
+        if(physicsEngine.inWater(endPos[0],endPos[1])) return Integer.MAX_VALUE;
+        double badShots = badShots(endPos,solver);
+        System.out.println("Number of bad shots: " + badShots);
+        return 0.05 * badShots + distanceFromGoal(endPos);
+    }
+
+    private double badShots(double[] pos, int solver)
+    {
         double badShots = 0;
-        for(double vx = 5, vy = 5; vx != 5 - targetParameters[2] && vy != 5 + targetParameters[2]; vx += sign(vy) * targetParameters[2], vy += sign(vx) * targetParameters[2])
+        double vx = 5;
+        double vy = 5;
+        while(vx != 5 - targetParameters[2] || vy != 5 + targetParameters[2])
         {
-            double[] shot = physicsEngine.takeShot(endPos[0],endPos[1],new double[]{vx,vy},solver);
+            //System.out.println(vx + " " + vy);
+            //System.out.println("Comparing " + pos[0] + " " + pos[1]);
+            double[] shot = physicsEngine.takeShot(pos[0],pos[1],new double[]{vx,vy},solver);
+            //System.out.println("to" + shot[0] + " " + shot[1]);
             if(physicsEngine.inWater(shot[0],shot[1])) badShots++;
             if(physicsEngine.inSand(shot[0],shot[1])) badShots += 0.5; // 0.5 is an arbitrary number, only to indicate that sand shots are not as good as normal ones
+            vx += sign(vy) * targetParameters[2];
+            vy += sign(vx) * targetParameters[2];
+            //System.out.println("changed" + vx + " " + vy);
         }
-        return 2 * badShots + distanceFromGoal(endPos); // 0.2 is the weight factor
+        return badShots;
     }
 
     private double distanceFromGoal(double[] vector)
