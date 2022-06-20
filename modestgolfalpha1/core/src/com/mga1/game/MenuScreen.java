@@ -33,7 +33,11 @@ public class MenuScreen implements Screen{
     private String sandStatic;
     private boolean hasSand;
     private boolean hasAI;
+    private Integer solver;
 
+    public Integer getSolver() {
+        return solver;
+    }
     public boolean isHasAI() {
         return hasAI;
     }
@@ -100,7 +104,7 @@ public class MenuScreen implements Screen{
     private void makeChanges(final TextField fieldX0, final TextField fieldY0, final TextField fieldXt,
                     final TextField fieldYt, final TextField fieldRadius, final TextField fieldMuk,
                     final TextField fieldMus, final TextField fieldHeightProfile, final TextField fieldSandX,
-                    final TextField fieldSandY, final TextField fieldSandKineticAndStatic) {
+                    final TextField fieldSandY, final TextField fieldSandKineticAndStatic, final TextField fieldSolver) {
                 String[] arr1 = fieldX0.getText().split(" ");
                 x0 = arr1[arr1.length - 1];
                 String[] arr2 = fieldY0.getText().split(" ");
@@ -141,6 +145,12 @@ public class MenuScreen implements Screen{
                 }else{
                     hasSand = false;
                 }
+                String[] arr11 = fieldSolver.getText().split(" ");
+                try {
+                    solver = Integer.parseInt(arr11[arr11.length - 1]);
+                } catch (Exception e) {
+                    solver = 0;
+                }
                 
                 
                 game.changeScreen(game.APPLICATION);
@@ -170,6 +180,7 @@ public class MenuScreen implements Screen{
         final TextField fieldSandX = new TextField("SandXCoordintates = ", skin);
         final TextField fieldSandY = new TextField("SandYCoordintates = ", skin);
         final TextField fieldSandKineticAndStatic = new TextField("SandKineticAndStatic = ", skin);
+        final TextField fieldSolver = new TextField("Solver = 0", skin);
 
 
         // final ScrollPane scrollPane = new ScrollPane(table, skin);
@@ -196,6 +207,8 @@ public class MenuScreen implements Screen{
         table.row().pad(5, 0, 5, 0);
         table.add(fieldSandKineticAndStatic).fillX().uniformX();
         table.row().pad(5, 0, 5, 0);
+        table.add(fieldSolver).fillX().uniformX();
+        table.row().pad(5, 0, 5, 0);
         table.add(newGame).fillX().uniformX();
         table.row().pad(5, 0, 5, 0);
         //table.add(preferences).fillX().uniformX();
@@ -206,7 +219,7 @@ public class MenuScreen implements Screen{
             public void changed(ChangeEvent event, Actor actor) {
                 //Gdx.app.exit();
                 makeChanges(fieldX0, fieldY0, fieldXt, fieldYt, fieldRadius, fieldMuk, fieldMus, fieldHeightProfile,
-                        fieldSandX, fieldSandY, fieldSandKineticAndStatic);	
+                        fieldSandX, fieldSandY, fieldSandKineticAndStatic, fieldSolver);	
                 hasAI = true;			
             }
         });
@@ -214,7 +227,7 @@ public class MenuScreen implements Screen{
             @Override
             public void changed(ChangeEvent event, Actor actor) {
                 makeChanges(fieldX0, fieldY0, fieldXt, fieldYt, fieldRadius, fieldMuk, fieldMus, fieldHeightProfile,
-                        fieldSandX, fieldSandY, fieldSandKineticAndStatic);
+                        fieldSandX, fieldSandY, fieldSandKineticAndStatic, fieldSolver);
             }
 
             
