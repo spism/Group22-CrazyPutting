@@ -199,7 +199,7 @@ public class AI
             currY = shotTaken[1];
         }
 
-        System.out.println(currX + " " + currY);
+        //System.out.println(currX + " " + currY);
         return shotsTaken;
     }
 
@@ -214,7 +214,7 @@ public class AI
         {
             //System.out.println("localizing...");
 
-            double spread = distanceFromGoal / (4 * badShots(initPos,solver));
+            double spread = distanceFromGoal / (badShots(initPos,solver));
 
             //left and right speeds (the current speed is changed by a bit in both directions) are evaluated and the better one is chosen
             double[] rightSpeed = {xSpeed + (sign(ySpeed) * spread * targetParameters[2]), ySpeed - (sign(xSpeed) * spread * targetParameters[2])};
@@ -276,32 +276,55 @@ public class AI
         if(physicsEngine.inWater(endPos[0],endPos[1])) return Integer.MAX_VALUE;
         double badShots = badShots(endPos,solver);
         System.out.println("Number of bad shots: " + badShots);
-        return 0.05 * badShots + distanceFromGoal(endPos);
+        return badShots + distanceFromGoal(endPos);
     }
 
     private double badShots(double[] pos, int solver)
     {
         double badShots = 0;
-        double vx = 5;
-        double vy = 5;
-        while(vx != 5 - targetParameters[2] || vy != 5 + targetParameters[2])
+        double vx = 2.5;
+        double vy = 2.5;
+        //System.out.println("start");
+        while(!withinBounds(vx,2.5 - targetParameters[2]) || !withinBounds(vy,2.5 + targetParameters[2]))
         {
             //System.out.println(vx + " " + vy);
             //System.out.println("Comparing " + pos[0] + " " + pos[1]);
-            double[] shot = physicsEngine.takeShot(pos[0],pos[1],new double[]{vx,vy},solver);
-            //System.out.println("to" + shot[0] + " " + shot[1]);
-            if(physicsEngine.inWater(shot[0],shot[1])) badShots++;
-            if(physicsEngine.inSand(shot[0],shot[1])) badShots += 0.5; // 0.5 is an arbitrary number, only to indicate that sand shots are not as good as normal ones
+            for(double i = 0; i < 12; i += targetParameters[2])
+            {
+                double temp = Math.sqrt(vx * vx + vy * vy);
+                double[] vector = {vx / temp,vy / temp};
+                if(physicsEngine.inWater(pos[0] + vector[0],pos[1] + vector[1]))
+                {
+                    badShots++;
+                    break;
+                }
+                else if(physicsEngine.inSand(pos[0] + vector[0],pos[1] + vector[1]))
+                {
+                    badShots += 0.1;
+                    break;
+                }
+            }
             vx += sign(vy) * targetParameters[2];
-            vy += sign(vx) * targetParameters[2];
+            vy -= sign(vx) * targetParameters[2];
             //System.out.println("changed" + vx + " " + vy);
         }
-        return badShots;
+        //System.out.println("stop");
+        return badShots + 1;
     }
 
+    private boolean withinBounds(double number, double otherNumber)
+    {
+        double epsilon = 0.00000001;
+        return otherNumber - epsilon < number && number < otherNumber + epsilon;
+    }
     private double distanceFromGoal(double[] vector)
     {
         return calculateEuclidean(targetParameters[0] - vector[0],targetParameters[1] - vector[1]);
+    }
+
+    private double firstOrderPolynom(double input, double[] pos, double gradient)
+    {
+        return gradient * (input - pos[0]) + pos[1];
     }
 
     private double calculateEuclidean(double x, double y)
