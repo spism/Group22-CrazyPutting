@@ -247,13 +247,8 @@ public class modgolf extends Game{
 	
 
 
-				if (Gdx.input.isKeyPressed(Keys.R)) {
-					cam.position.set(65f, 75f, 200f);
-					cam.lookAt(golfbol.transform.getTranslation(new Vector3()));
-					cam.update();
-					System.out.println("XPOS: " + phys.stateVector[0] + " YPOS: " + phys.stateVector[1]);
-					
-					System.out.println("Height: " + phys.getHeightProfile().evaluate(phys.stateVector[0], phys.stateVector[1]));
+				if (Gdx.input.isKeyPressed(Keys.R) && !menuScreen.isHasAI()) {
+					updateCameraInGui();
 					int i = 0;
 					while(i < 1000){
 					phys.runSimulation(phys.firstX, phys.firstY,3, 0, 2);
@@ -270,8 +265,44 @@ public class modgolf extends Game{
 					}
 
 				}
+				else if(Gdx.input.isKeyPressed(Keys.R) && menuScreen.isHasAI())
+				{
+					updateCameraInGui();
+					AI bots = new AI();
+					double[] speedsHillClimbing = bots.hillClimbing(0);
+					System.out.println(speedsHillClimbing[0]);
+					System.out.println(speedsHillClimbing[1]);
+					//phys.runSimulation(phys.stateVector[0], phys.stateVector[1], speedsHillClimbing[0], speedsHillClimbing[1], 2);
+					moveBall((float) phys.stateVector[0], (float) phys.stateVector[1]);
+					System.out.println("Distance to hole " + (Math.pow((phys.stateVector[0]-phys.targetX),2)+Math.pow((phys.stateVector[1]-phys.targetY), 2)));
+
+					if ((Math.pow((phys.stateVector[0]-phys.targetX),2)+Math.pow((phys.stateVector[1]-phys.targetY), 2)<= Math.pow(phys.targetRadius, 2))) {
+						System.out.println("Final step: ");
+						System.out.println(phys.stateVector[0]);
+						System.out.println(phys.stateVector[1]);
+						System.out.println(phys.stateVector[2]);
+						System.out.println(phys.stateVector[3]);
+						System.out.println("You Win!");
+					}
+					if (phys.stateVector[2] == 0 && phys.stateVector[3] == 0) {
+						System.out.println("Final step: ");
+						System.out.println(phys.stateVector[0]);
+						System.out.println(phys.stateVector[1]);
+						System.out.println(phys.stateVector[2]);
+						System.out.println(phys.stateVector[3]);
+						System.out.println("You lose!");
+					}
+				}
 		modelBatch.end();
 		}
+	}
+	private void updateCameraInGui() {
+		cam.position.set(65f, 75f, 200f);
+		cam.lookAt(golfbol.transform.getTranslation(new Vector3()));
+		cam.update();
+		System.out.println("XPOS: " + phys.stateVector[0] + " YPOS: " + phys.stateVector[1]);
+		
+		System.out.println("Height: " + phys.getHeightProfile().evaluate(phys.stateVector[0], phys.stateVector[1]));
 	}
 
 	public void moveBall(float x, float y){
