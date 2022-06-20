@@ -102,6 +102,16 @@ public class PhysicsEngine
         this.heightProfile = new Function(heightProfile);
 
     }
+    private PhysicsEngine(String x0, String y0, String xT, String yT, String radius, String muk, String mus, String heightProfile, String sandX1, String sandX2, String sandY1, String sandY2, String sandKinetic, String sandStatic)
+    {
+        this(x0, y0, xT, yT, radius, muk, mus, heightProfile);
+        this.sandX1 = Double.parseDouble(sandX1);
+        this.sandX2 = Double.parseDouble(sandX2);
+        this.sandY1 = Double.parseDouble(sandY1);
+        this.sandY2 = Double.parseDouble(sandY2);
+        this.sandKinetic = Double.parseDouble(sandKinetic);
+        this.sandStatic = Double.parseDouble(sandStatic);
+    }
 
     private static void initSolvers()
     {
@@ -115,6 +125,16 @@ public class PhysicsEngine
         if(physicsEngine == null)
         {
             physicsEngine = new PhysicsEngine(x0, y0, xT, yT, radius, muk, mus, heightProfile);
+            initSolvers();
+        }
+
+        return physicsEngine;
+    }
+    public static PhysicsEngine getPhysicsEngine(String x0, String y0, String xT, String yT, String radius, String muk, String mus, String heightProfile, String sandX1, String sandX2, String sandY1, String sandY2, String sandKinetic, String sandStatic)
+    {
+        if(physicsEngine == null)
+        {
+            physicsEngine = new PhysicsEngine(x0, y0, xT, yT, radius, muk, mus, heightProfile, sandX1, sandX2, sandY1, sandY2, sandKinetic, sandStatic);
             initSolvers();
         }
 
