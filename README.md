@@ -19,6 +19,7 @@ muks = [muks]
 muss = [muss]
 xWall = [range of x coordinatess] (only in the text file)
 yWall = [range of y coordinates] (only in the text file)
+solver = [solver] (Either 0(Euler), 1(RK2), 2(RK4))
   
 Wherever an unknown variable is surrounded by "[]" brackets, any user input of any number type (except imaginary) is accepted, as long as the number fits into a double variable.  The only exceptions are:
  - heightProfile, for which a sample input can be ( 0.5 * ( 0.9 + sin ( ( ( x - y ) / 7 ) ) ) )
