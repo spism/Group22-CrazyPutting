@@ -2,14 +2,15 @@ package com.mga1.game;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class PhysicsEngine
 {
     private boolean hasSand = false;
     public double firstX, firstY, targetX, targetY, targetRadius, x1Wall, x2Wall, y1Wall, y2Wall, sandX1, sandX2, sandY1, sandY2, grassKinetic, grassStatic, sandKinetic, sandStatic;
-    public Function heightProfile;
-    public final double h = 0.0001;
+    private Function heightProfile;
+    public final double h = 0.01;
     private final double g = 9.81;
     public double[] stateVector = new double[4];
     // stateVector[0] is the current x position
@@ -88,7 +89,8 @@ public class PhysicsEngine
             System.out.println("I/O exception");
         }
     }
-     private PhysicsEngine(String x0, String y0, String xT, String yT, String radius, String muk, String mus, String heightProfile)
+
+    private PhysicsEngine(String x0, String y0, String xT, String yT, String radius, String muk, String mus, String heightProfile)
     {
         firstX = Double.parseDouble(x0);
         firstY = Double.parseDouble(y0);
@@ -98,7 +100,7 @@ public class PhysicsEngine
         grassKinetic = Double.parseDouble(muk);
         grassStatic = Double.parseDouble(mus);
         this.heightProfile = new Function(heightProfile);
-        
+
     }
 
     private static void initSolvers()
@@ -106,6 +108,17 @@ public class PhysicsEngine
         solvers.add(new EulersMethod());
         solvers.add(new RungeKutta2());
         solvers.add(new RungeKutta4());
+    }
+
+    public static PhysicsEngine getPhysicsEngine(String x0, String y0, String xT, String yT, String radius, String muk, String mus, String heightProfile)
+    {
+        if(physicsEngine == null)
+        {
+            physicsEngine = new PhysicsEngine(x0, y0, xT, yT, radius, muk, mus, heightProfile);
+            initSolvers();
+        }
+
+        return physicsEngine;
     }
 
     public static PhysicsEngine getPhysicsEngine()
@@ -118,18 +131,9 @@ public class PhysicsEngine
 
         return physicsEngine;
     }
-    
-    public static PhysicsEngine getPhysicsEngine(String x0, String y0, String xT, String yT, String radius, String muk, String mus, String heightProfile)
-    {
-        if(physicsEngine == null)
-        {
-            physicsEngine = new PhysicsEngine(x0, y0, xT, yT, radius, muk, mus, heightProfile);
-            initSolvers();
-        }
 
-        return physicsEngine;
-    }
-    public Function getHeightProfile() {
+    public Function getHeightProfile()
+    {
         return heightProfile;
     }
 
@@ -151,13 +155,15 @@ public class PhysicsEngine
         double newX = xCoor + limitZero;
         double newY = yCoor + limitZero;
 
+        //System.out.println(heightProfile.evaluate(newX,yCoor) + " " + heightProfile.evaluate(xCoor,yCoor));
+        //System.out.println(heightProfile.evaluate(xCoor,newY) + " " + heightProfile.evaluate(xCoor,yCoor));
         double slopeX = (heightProfile.evaluate(newX,yCoor) - heightProfile.evaluate(xCoor,yCoor)) / limitZero;
-        double slopeY = (heightProfile.evaluate(xCoor,newY) - heightProfile.evaluate(xCoor, yCoor)) / limitZero;
+        double slopeY = (heightProfile.evaluate(xCoor,newY) - heightProfile.evaluate(xCoor,yCoor)) / limitZero;
 
         double mainSlope;
         double mainSpeed;
 
-        double kineticCoeff = hasSand && sandX1 < xCoor && xCoor < sandX2 && sandY1 < yCoor && yCoor < sandY2 ? sandKinetic : grassKinetic;
+        double kineticCoeff = inSand(xCoor,yCoor) ? sandKinetic : grassKinetic;
         double acceleration = 0;
         double pythagoreanSpeed = xSpeed * xSpeed + ySpeed * ySpeed;
         double denominator2ZeroSpeed = Math.sqrt(slopeX * slopeX + slopeY * slopeY);
@@ -263,7 +269,7 @@ public class PhysicsEngine
      */
     private boolean atRest(double x, double y)
     {
-        double staticCoeff = hasSand && sandX1 < x && x < sandX2 && sandY1 < y && y < sandY2 ? sandStatic : grassStatic;
+        double staticCoeff = inSand(x,y) ? sandStatic : grassStatic;
         double limitZero = 0.000000000001;
         double derivativeX = (Math.abs(heightProfile.evaluate(x,y) - heightProfile.evaluate(x + limitZero, y))) / limitZero;
         double derivativeY = (Math.abs(heightProfile.evaluate(x, y) - heightProfile.evaluate(x, y + limitZero))) / limitZero;
@@ -287,7 +293,7 @@ public class PhysicsEngine
      * @param initSpeedY is the initial speed in the Y direction
      * @param solver is the selected solver.  0 means Euler's method, 1 means Runge-Kutta 2nd order, 2 means Runge-Kutta 4th order
      */
-    public void runSimulation(double initSpeedX, double initSpeedY, int solver)
+    public void runSimulation(double firstX, double firstY, double initSpeedX, double initSpeedY, int solver)
     {
         if(!initSpeedsDefined)
         {
@@ -309,9 +315,15 @@ public class PhysicsEngine
      * @param y is the current y position
      * @return true if the ball is in the hole
      */
-    public boolean inHole(double x, double y)
+    boolean inHole(double x, double y)
     {
         return (Math.pow(x - targetX,2) + Math.pow(y - targetY,2)) <= Math.pow(targetRadius,2);
+    }
+
+    boolean inSand(double x, double y)
+    {
+        if(hasSand) return sandX1 < x && x < sandX2 && sandY1 < y && y < 2;
+        return false;
     }
 
     /**
@@ -324,16 +336,17 @@ public class PhysicsEngine
     {
         stateVector[0] = firstX;
         stateVector[1] = firstY;
-        stateVector[3] = speed[0];
-        stateVector[4] = speed[1];
-        while(stateVector[3] != 0 || stateVector[4] != 0)
+        stateVector[2] = speed[0];
+        stateVector[3] = speed[1];
+        while(stateVector[2] != 0 || stateVector[3] != 0)
         {
             if(inHole(stateVector[0],stateVector[1]))
             {
                 return null;
             }
-            runSimulation(speed[0],speed[1],solver);
+            runSimulation(firstX,firstY,speed[0],speed[1],solver);
         }
+        initSpeedsDefined = false;
         return new double[]{stateVector[0],stateVector[1]};
     }
 
@@ -378,7 +391,7 @@ public class PhysicsEngine
      * @param y is the current y position
      * @return true if the ball is in water
      */
-    private boolean inWater(double x, double y)
+    boolean inWater(double x, double y)
     {
         return heightProfile.evaluate(x,y) < 0;
     }
@@ -421,12 +434,17 @@ public class PhysicsEngine
         System.out.println(speedsHillClimbing[0]);
         System.out.println(speedsHillClimbing[1]);*/
 
-        /*AI bots = new AI();
-        double[] speedsHillClimbing = bots.hillClimbing(2);
+        AI bots = new AI();
+        List<double[]> shots = bots.mazeAI(2);
+        for(double[] shot : shots)
+        {
+            System.out.println(shot[0] + " " + shot[1]);
+        }
+        /*double[] speedsHillClimbing = bots.hillClimbing(2);
         System.out.println(speedsHillClimbing[0]);
         System.out.println(speedsHillClimbing[1]);*/
 
-        double bound = 1;
+        /*double bound = 1;
         int count = 0;
         double sumXSpeed = 0;
         double sumYSpeed = 0;
@@ -441,7 +459,7 @@ public class PhysicsEngine
                 //sumYSpeed += Math.abs(test.stateVector[3]);
                 //speedsCount++;
             }
-            test.runSimulation(2,2,2);
+            test.runSimulation(-1,-0.5,2,2,2);
             if(test.stateVector[2] == 0 && test.stateVector[3] == 0)
             {
                 //System.out.println("Average x speed: " + (sumXSpeed / speedsCount));
@@ -452,6 +470,6 @@ public class PhysicsEngine
                 break;
             }
             count++;
-        }
+        }*/
     }
 }

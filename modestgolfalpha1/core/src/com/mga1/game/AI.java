@@ -1,5 +1,7 @@
 package com.mga1.game;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class AI
@@ -37,7 +39,7 @@ public class AI
                 System.out.println("Y speed: " + ySpeed);
                 while(stateVector[2] != 0 || stateVector[3] != 0)
                 {
-                    physicsEngine.runSimulation(xSpeed,ySpeed,solver);
+                    physicsEngine.runSimulation(firstX,firstY,xSpeed,ySpeed,solver);
                     if(physicsEngine.inHole(stateVector[0],stateVector[1]))
                     {
                         System.out.println("Finding the speed took " + iterationNumber + " iterations");
@@ -56,7 +58,7 @@ public class AI
         double xSpeed = (random.nextInt(2) - 1) * random.nextDouble() * 5;
         double ySpeed = (random.nextInt(2) - 1) * random.nextDouble() * 5;
         System.out.println("Initial speeds are: " + xSpeed + " " + ySpeed);
-        double currBest = Integer.MAX_VALUE;
+        double totalBest = Integer.MAX_VALUE;
         double localBest = Integer.MAX_VALUE;
         double[] bestPos = new double[2];
         double[] localPos = physicsEngine.takeShot(firstX,firstY,new double[]{xSpeed,ySpeed},solver);
@@ -77,9 +79,9 @@ public class AI
 
             double spread = 2;
             //left and right speeds (the current speed is change by a bit in both directions) are evaluated and the better one is chosen
-            double[] rightSpeed = {xSpeed - spread * targetParameters[2] * euclideanDistance, ySpeed + spread * targetParameters[2] * euclideanDistance};
-            double[] leftSpeed = {xSpeed + spread * targetParameters[2] * euclideanDistance, ySpeed - spread * targetParameters[2] * euclideanDistance};
-            double[] strongerSpeed = {xSpeed + spread * targetParameters[2] * euclideanDistance, ySpeed + spread * targetParameters[2] * euclideanDistance};
+            double[] rightSpeed = {xSpeed + sign(ySpeed) * spread * targetParameters[2] * euclideanDistance, ySpeed - sign(xSpeed) * spread * targetParameters[2] * euclideanDistance};
+            double[] leftSpeed = {xSpeed - sign(ySpeed) * spread * targetParameters[2] * euclideanDistance, ySpeed + sign(xSpeed) * spread * targetParameters[2] * euclideanDistance};
+            double[] strongerSpeed = {xSpeed + sign(xSpeed) * spread * targetParameters[2] * euclideanDistance, ySpeed + sign(ySpeed) * spread * targetParameters[2] * euclideanDistance};
 
             //order is very important, keep shots in order left -> center -> right with respective indices 0, 1, 2 or any multiple of those
             double[][] speeds = {leftSpeed,strongerSpeed,rightSpeed};
@@ -129,12 +131,12 @@ public class AI
                 ySpeed = speeds[index][1];
                 localPos = shotsTaken[index];
             }
-            else if(localBest < currBest)
+            else if(localBest < totalBest)
             {
                 //if local peak has been reached, check if the local peak is indeed better than the current located global peak
                 System.out.println("Improvement!  New best position!");
                 System.out.println(localBest);
-                currBest = localBest;
+                totalBest = localBest;
                 bestSpeeds[0] = xSpeed;
                 bestSpeeds[1] = ySpeed;
                 System.out.println("Best speeds are " + bestSpeeds[0] + " " + bestSpeeds[1]);
@@ -162,6 +164,115 @@ public class AI
         }
         System.out.println("Finding the speeds took " + iterationNumber + " iterations");
         return bestSpeeds;
+    }
+
+    private static int sign(double number)
+    {
+        if(number > 0) return 1;
+        else if(number == 0) return 0;
+        else return -1;
+    }
+
+    public List<double[]> mazeAI(int solver)
+    {
+        Random rand = new Random(System.currentTimeMillis());
+        ArrayList<double[]> shotsTaken = new ArrayList<>();
+        double currX = firstX;
+        double currY = firstY;
+
+        while(!physicsEngine.inHole(currX,currY))
+        {
+            System.out.println("taking another shot...");
+            double vx = (rand.nextInt(2) - 1) * rand.nextDouble() * 5; // make the random shots lean towards the goal, that should speed up by a lot
+            double vy = (rand.nextInt(2) - 1) * rand.nextDouble() * 5;
+            String[] shotInfo = localize(new double[]{currX,currY},new double[]{vx,vy},solver).split(" ");
+            double[] localSpeeds = {Double.parseDouble(shotInfo[1]),Double.parseDouble(shotInfo[2])};
+            shotsTaken.add(localSpeeds);
+            if(shotInfo[0].equals("yes"))
+            {
+                break;
+            }
+            double[] shotTaken = physicsEngine.takeShot(currX,currY,localSpeeds,solver);
+            currX = shotTaken[0];
+            currY = shotTaken[1];
+        }
+
+        System.out.println(currX + " " + currY);
+        return shotsTaken;
+    }
+
+    public String localize(double[] initPos, double[] initSpeeds, int solver)
+    {
+        double xSpeed = initSpeeds[0];
+        double ySpeed = initSpeeds[1];
+        double currBest = Integer.MAX_VALUE;
+        double localBest = shotScore(physicsEngine.takeShot(initPos[0],initPos[1],initSpeeds,solver),solver);
+
+        while(currBest >= localBest)
+        {
+            System.out.println("localizing...");
+
+            double spread = 2;
+            //left and right speeds (the current speed is changed by a bit in both directions) are evaluated and the better one is chosen
+            double[] rightSpeed = {xSpeed + (sign(ySpeed) * spread * targetParameters[2] / currBest), ySpeed - (sign(xSpeed) * spread * targetParameters[2] / currBest)};
+            double[] leftSpeed = {xSpeed - (sign(ySpeed) * spread * targetParameters[2] / currBest), ySpeed + (sign(xSpeed) * spread * targetParameters[2] / currBest)};
+            double[] strongerSpeed = {xSpeed + (sign(xSpeed) * spread * targetParameters[2] / currBest), ySpeed + (sign(ySpeed) * spread * targetParameters[2] / currBest)};
+
+            //order is very important, keep shots in order left -> center -> right with respective indices 0, 1, 2 or any multiple of those
+            double[][] speeds = {leftSpeed,strongerSpeed,rightSpeed};
+
+            double[] strongerShot = physicsEngine.takeShot(initPos[0],initPos[1],strongerSpeed,solver);
+            if(strongerShot == null)
+            {
+                return "yes " + strongerSpeed[0] + " " + strongerSpeed[1];
+            }
+
+            double[] rightShot = physicsEngine.takeShot(initPos[0],initPos[1],rightSpeed,solver);
+            if(rightShot == null)
+            {
+                return "yes " + rightSpeed[0] + " " + rightSpeed[1];
+            }
+
+            double[] leftShot = physicsEngine.takeShot(initPos[0],initPos[1],leftSpeed,solver);
+            if(leftShot == null)
+            {
+                return "yes " + leftSpeed[0] + " " + leftSpeed[1];
+            }
+
+            double min = Integer.MAX_VALUE;
+            int index = -1;
+            double[] shotScores = {shotScore(leftShot,solver),shotScore(strongerShot,solver),shotScore(rightShot,solver)};
+            for(int i = 0; i < 3; i++)
+            {
+                if(shotScores[i] < min)
+                {
+                    min = shotScores[i];
+                    index = i;
+                }
+            }
+
+            if(min < currBest)
+            {
+                currBest = min;
+                xSpeed = speeds[index][0];
+                ySpeed = speeds[index][1];
+                System.out.println("Speeds found: " + xSpeed + " " + ySpeed);
+            }
+            else break;
+        }
+        return "no " + xSpeed + " " + ySpeed;
+    }
+
+    private double shotScore(double[] endPos, int solver)
+    {
+        double badShots = 0;
+        for(double vx = 5, vy = 5; vx != 5 - targetParameters[2] && vy != 5 + targetParameters[2]; vx += sign(vy) * targetParameters[2], vy += sign(vx) * targetParameters[2])
+        {
+            double[] shot = physicsEngine.takeShot(endPos[0],endPos[1],new double[]{vx,vy},solver);
+            if(physicsEngine.inWater(shot[0],shot[1])) badShots++;
+            if(physicsEngine.inSand(shot[0],shot[1])) badShots += 0.5; // 0.5 is an arbitrary number, only to indicate that sand shots are not as good as normal ones
+        }
+        return 2 * badShots + distanceFromGoal(endPos); // 0.2 is the weight factor
     }
 
     private double distanceFromGoal(double[] vector)
